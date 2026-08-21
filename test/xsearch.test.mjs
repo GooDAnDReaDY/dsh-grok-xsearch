@@ -21,7 +21,7 @@ test('validateDateRange rejects inverted and future from_date', () => {
 
 test('buildXSearchPayload matches Hermes x_search request shape', () => {
   const body = buildXSearchPayload({
-    model: 'grok-4.20-reasoning',
+    model: 'grok-4.6',
     query: 'What are people saying about xAI on X?',
     allowed: ['xai', 'grok'],
     excluded: [],
@@ -30,7 +30,7 @@ test('buildXSearchPayload matches Hermes x_search request shape', () => {
     enableImage: true,
     enableVideo: false,
   })
-  assert.equal(body.model, 'grok-4.20-reasoning')
+  assert.equal(body.model, 'grok-4.6')
   assert.equal(body.store, false)
   assert.equal(body.tools[0].type, 'x_search')
   assert.deepEqual(body.tools[0].allowed_x_handles, ['xai', 'grok'])
@@ -69,7 +69,7 @@ test('runXSearch posts to api.x.ai responses and flags degraded', async () => {
   const result = await runXSearch({
     accessToken: 'tok',
     baseUrl: 'https://api.x.ai/v1',
-    model: 'grok-4.20-reasoning',
+    model: 'grok-4.6',
     query: 'xAI launch reactions',
     allowed_x_handles: ['xai'],
     timeoutMs: 5000,
@@ -85,7 +85,7 @@ test('runXSearch posts to api.x.ai responses and flags degraded', async () => {
 test('runXSearch rejects conflicting handle filters', async () => {
   await assert.rejects(() => runXSearch({
     accessToken: 'tok',
-    model: 'grok-4.20-reasoning',
+    model: 'grok-4.6',
     query: 'q',
     allowed_x_handles: ['xai'],
     excluded_x_handles: ['grok'],

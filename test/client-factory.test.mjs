@@ -18,4 +18,5 @@ test('client factory uses CommonJS shim and scoped id', () => {
   assert.match(src, /id: '@goodandready\/dsh-grok-xsearch'/)
   assert.match(src, /settings\.section/)
   assert.doesNotMatch(src, /Grok OAuth client id/)
+  assert.match(src, /gx-select/)
 })
