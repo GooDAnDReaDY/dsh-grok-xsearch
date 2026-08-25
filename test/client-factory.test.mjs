@@ -16,7 +16,9 @@ test('client factory uses CommonJS shim and scoped id', () => {
   assert.match(src, /var module = \{ exports: \{\} \}/)
   assert.match(src, /return module\.exports/)
   assert.match(src, /id: '@goodandready\/dsh-grok-xsearch'/)
-  assert.match(src, /settings\.section/)
+  // Раздел в боковом списке остался только запасным путём для сборок без
+  // вкладки «Плагины»; штатное место — карточка.
+  assert.match(src, /settings\.plugin\.item/)
   assert.doesNotMatch(src, /Grok OAuth client id/)
   assert.match(src, /gx-select/)
 })
