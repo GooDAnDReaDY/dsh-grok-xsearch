@@ -1,6 +1,6 @@
 {
   "name": "@goodandready/dsh-grok-xsearch",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Grok x_search tool for DeepSeek Harness via separate SuperGrok OAuth account.",
   "license": "MIT",
   "type": "module",
