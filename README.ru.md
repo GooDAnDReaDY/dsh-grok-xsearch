@@ -2,7 +2,7 @@
 
 <div align="center">
 
-<h3>Real-Time X (Twitter) Search Tool Powered by Isolated SuperGrok OAuth</h3>
+<h3>Инструмент поиска в X (Twitter) в реальном времени через SuperGrok OAuth</h3>
 
 <p align="center">
   <a href="https://www.npmjs.com/package/@goodandready/dsh-grok-xsearch"><img src="https://img.shields.io/npm/v/@goodandready/dsh-grok-xsearch.svg?style=for-the-badge&color=6366f1&labelColor=1e1b4b" alt="npm version"></a>
@@ -21,20 +21,20 @@
 
 ---
 
-## ⚡ Overview
+## ⚡ Обзор
 
-**`dsh-grok-xsearch`** equips agents with an `x_search` tool to query live X (Twitter) discussions via the xAI Responses API using an independent SuperGrok OAuth token.
+**`dsh-grok-xsearch`** даёт агенту инструмент `x_search` для поиска в X (Twitter) в реальном времени через xAI Responses API с изолированным OAuth-токеном SuperGrok.
 
 ```mermaid
 graph LR
-    Agent[🤖 DSH Agent / Tool Call] -->|x_search query, author, time| Plugin[dsh-grok-xsearch Engine]
-    Plugin -->|SuperGrok OAuth 1| xAI[xAI Responses API / X Index]
-    xAI -->|Tweets & Thread Metrics| Agent
+    Agent[🤖 Агент DSH / Tool Call] -->|x_search запрос, автор, дата| Plugin[Движок dsh-grok-xsearch]
+    Plugin -->|SuperGrok OAuth 1| xAI[xAI Responses API / Индекс X]
+    xAI -->|Твиты и треды обсуждений| Agent
 ```
 
 ---
 
-## 📦 Quick Installation
+## 📦 Быстрая установка
 
 ```bash
 dsh plugin --profile web add @goodandready/dsh-grok-xsearch
@@ -42,6 +42,6 @@ dsh plugin --profile web add @goodandready/dsh-grok-xsearch
 
 ---
 
-## 📄 License
+## 📄 Лицензия
 
 MIT © [GooDAnDReaDY](https://github.com/GooDAnDReaDY)
