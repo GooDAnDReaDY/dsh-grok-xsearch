@@ -23,13 +23,36 @@
 
 ## ⚡ 插件概览
 
-**`dsh-grok-xsearch`** 为智能体提供 `x_search` 工具，基于独立的 SuperGrok OAuth 凭据实时检索 X (Twitter) 热门讨论与推文线程。
+**`dsh-grok-xsearch`** 为 **DeepSeek Harness** 智能体提供 `x_search` 工具，使其能够实时检索 X (Twitter) 热门推文、突发事件、开发者讨论与特定作者时间线。
 
 ```mermaid
 graph LR
-    Agent[🤖 DSH 智能体 / 工具调用] -->|x_search 关键词与筛选| Plugin[dsh-grok-xsearch 核心]
-    Plugin -->|SuperGrok OAuth 1| xAI[xAI Responses API / X 索引库]
-    xAI -->|结构化推文与讨论数据| Agent
+    subgraph AgentAction [智能体决策流]
+        Agent[🤖 需要实时 X 社交网络情报] --> ToolCall[调用工具: x_search]
+    end
+
+    subgraph SearchEngine [dsh-grok-xsearch 检索引擎]
+        ToolCall --> Filter[参数校验: 作者过滤、日期范围与数量]
+        Filter --> Auth{鉴权令牌解析}
+        Auth -->|独立 PKCE 流程| OAuth[插件专属 OAuth 会话]
+        Auth -->|进程内共享| Sub[dsh-subscriptions 网关]
+    end
+
+    subgraph UpstreamX [xAI 与 X 数据流]
+        OAuth --> xAI[xAI Responses 搜索接口]
+        Sub --> xAI
+        xAI --> Raw[最新推文、互动指标与引用链]
+    end
+
+    subgraph Ingestion [上下文装配]
+        Raw --> Clean[结构化 Markdown 提炼]
+        Clean --> Agent
+    end
+
+    style AgentAction fill:#1e1e2e,stroke:#89b4fa,stroke-width:2px,color:#cdd6f4
+    style SearchEngine fill:#181825,stroke:#cba6f7,stroke-width:2px,color:#cdd6f4
+    style UpstreamX fill:#11111b,stroke:#a6e3a1,stroke-width:2px,color:#cdd6f4
+    style Ingestion fill:#181825,stroke:#f38ba8,stroke-width:2px,color:#cdd6f4
 ```
 
 ---
