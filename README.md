@@ -15,19 +15,56 @@
 <a name="-english"></a>
 ## 🇬🇧 English
 
-Real-time X (Twitter) search tool for DeepSeek Harness agents powered by an isolated SuperGrok OAuth session.
+# dsh-grok-xsearch
 
-### Features
+`x_search` tool for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness): search X (Twitter) via the xAI Responses API.
 
-- **`x_search` Tool**: Equips agents with real-time keyword, author, and timestamp query filters.
-- **Isolated Quota**: Uses an independent SuperGrok OAuth token without draining primary LLM credits.
-- **Thread Parsing**: Extracts tweet posts, engagement metrics, and discussion replies.
+Uses a **separate** SuperGrok OAuth account (`GROK_XSEARCH_OAUTH_1`), independent from `@goodandready/dsh-subscriptions` chat Grok.
 
-### Install
+## Install
 
 ```bash
 dsh plugin --profile web add @goodandready/dsh-grok-xsearch
 ```
+
+## Settings
+
+1. Open **Settings → Grok X Search**.
+2. Click **Connect** and finish SuperGrok OAuth (paste the redirected URL if the browser does not return to Harness).
+3. Pick a model from the dropdown (**Grok 4.5** recommended; Grok 4.6 may be rate-limited).
+4. In chat, ask the agent to use the `x_search` tool for X/Twitter queries.
+
+### Host configuration (optional)
+
+OAuth client id and redirect URI are normally set in the profile patch on the host, not in the UI:
+
+```yaml
+- id: dsh-grok-xsearch
+  config:
+    grokClientId: '<GROK_CLIENT_ID>'
+    redirectUri: 'http://127.0.0.1:56121/callback'
+    model: 'grok-4.5'
+```
+
+Credential ref: `GROK_XSEARCH_OAUTH_1` (never returned by Settings GET).
+
+## Tool
+
+`x_search` posts to `https://api.x.ai/v1/responses` with built-in tool `{ type: 'x_search' }`.
+
+Parameters: `query`, optional handle filters, date range, image/video understanding flags.
+
+## Identity
+
+| Place | Value |
+|---|---|
+| `package.json` `name` | `@goodandready/dsh-grok-xsearch` |
+| `cordis.patch.yml` `name:` | `@goodandready/dsh-grok-xsearch` |
+| `lib/client.js` loader `id` | `@goodandready/dsh-grok-xsearch` |
+
+## License
+
+MIT
 
 ---
 
@@ -35,19 +72,19 @@ dsh plugin --profile web add @goodandready/dsh-grok-xsearch
 <details open>
 <summary><h2>🇷🇺 Русский (Полное руководство)</h2></summary>
 
-Инструмент поиска в X (Twitter) в реальном времени для агентов DeepSeek Harness через изолированную сессию SuperGrok OAuth.
+Инструмент `x_search` для [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness): поиск в X (Twitter) в реальном времени через xAI Responses API.
 
-### Возможности
+Использует **отдельный** OAuth-аккаунт SuperGrok (`GROK_XSEARCH_OAUTH_1`), независимый от чата подписок.
 
-- **Инструмент `x_search`**: поиск по ключевым словам, авторам и временным диапазонам.
-- **Изолированная квота**: отдельная сессия SuperGrok, не расходующая баланс основной модели.
-- **Парсинг тредов**: извлечение текстов твитов, метрик вовлеченности и цепочек ответов.
-
-### Установка
+## Установка
 
 ```bash
 dsh plugin --profile web add @goodandready/dsh-grok-xsearch
 ```
+
+## Лицензия
+
+MIT
 
 </details>
 
@@ -57,18 +94,18 @@ dsh plugin --profile web add @goodandready/dsh-grok-xsearch
 <details>
 <summary><h2>🇨🇳 中文 (完整技术文档)</h2></summary>
 
-基于 SuperGrok OAuth 的 X (Twitter) 实时搜索工具插件：为 DeepSeek Harness 智能体提供独立的 X 平台检索能力。
+DeepSeek Harness 专属 `x_search` 工具插件：通过 xAI Responses API 实时检索 X (Twitter) 内容。
 
-### 核心亮点
+采用**独立的** SuperGrok OAuth 账号鉴权 (`GROK_XSEARCH_OAUTH_1`)，与订阅聊天配额完全隔离。
 
-- **`x_search` 检索工具**：支持关键词、特定作者及时间区间的精准筛选。
-- **独立配额隔离**：使用独立的 SuperGrok OAuth 凭证，不消耗主模型额度。
-- **推文线程解析**：结构化提炼推文正文、互动数据与讨论分支。
-
-### 安装方法
+## 安装指南
 
 ```bash
 dsh plugin --profile web add @goodandready/dsh-grok-xsearch
 ```
+
+## 开源协议
+
+MIT
 
 </details>
