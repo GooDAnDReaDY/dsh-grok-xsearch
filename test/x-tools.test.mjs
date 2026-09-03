@@ -6,6 +6,30 @@ import {
   createFactCheckNotesTool,
 } from '../lib/x-tools.js'
 
+const mockDefineTool = (toolDef) => ({ ...toolDef, __wrappedWithDefineTool: true })
+
+test('companion tool factories throw TypeError when defineTool is omitted', () => {
+  const baseOpts = {
+    getContext: () => ({}),
+    getConfig: () => ({}),
+    runSearch: async () => ({}),
+    getAccessToken: async () => 'tok',
+  }
+
+  assert.throws(
+    () => createAuthorProfileTool(baseOpts),
+    /defineTool function is required to construct x_author_profile tool schema/
+  )
+  assert.throws(
+    () => createTrendingTopicsTool(baseOpts),
+    /defineTool function is required to construct x_trending_topics tool schema/
+  )
+  assert.throws(
+    () => createFactCheckNotesTool(baseOpts),
+    /defineTool function is required to construct x_fact_check_notes tool schema/
+  )
+})
+
 test('createAuthorProfileTool defines valid tool schema and executes', async () => {
   let capturedSearchOpts
   const tool = createAuthorProfileTool({
@@ -30,9 +54,11 @@ test('createAuthorProfileTool defines valid tool schema and executes', async () 
       }
     },
     getAccessToken: async () => 'test-token',
+    defineTool: mockDefineTool,
   })
 
   assert.equal(tool.name, 'x_author_profile')
+  assert.equal(tool.__wrappedWithDefineTool, true)
   assert.ok(tool.parameters.handle)
 
   const res = await tool.execute({
@@ -74,9 +100,11 @@ test('createTrendingTopicsTool defines valid schema and executes', async () => {
       }
     },
     getAccessToken: async () => 'test-token',
+    defineTool: mockDefineTool,
   })
 
   assert.equal(tool.name, 'x_trending_topics')
+  assert.equal(tool.__wrappedWithDefineTool, true)
   const res = await tool.execute({
     domain: 'ai',
     region: 'Global',
@@ -117,9 +145,11 @@ test('createFactCheckNotesTool defines valid schema and executes', async () => {
       }
     },
     getAccessToken: async () => 'test-token',
+    defineTool: mockDefineTool,
   })
 
   assert.equal(tool.name, 'x_fact_check_notes')
+  assert.equal(tool.__wrappedWithDefineTool, true)
   const res = await tool.execute({
     claim: 'New quantum computer broke RSA encryption today',
     target_url: 'https://x.com/viral_post/status/11111',
