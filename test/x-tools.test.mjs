@@ -4,9 +4,23 @@ import {
   createAuthorProfileTool,
   createTrendingTopicsTool,
   createFactCheckNotesTool,
+  normalizeToolParameters,
 } from '../lib/x-tools.js'
 
 const mockDefineTool = (toolDef) => ({ ...toolDef, __wrappedWithDefineTool: true })
+
+test('normalizeToolParameters converts legacy property maps to JSON Schema', () => {
+  const tool = normalizeToolParameters({
+    name: 'demo',
+    parameters: { query: { type: 'string', required: true, description: 'q' } },
+  })
+  assert.deepEqual(tool.parameters, {
+    type: 'object',
+    properties: { query: { type: 'string', description: 'q' } },
+    required: ['query'],
+  })
+})
+
 
 test('companion tool factories throw TypeError when defineTool is omitted', () => {
   const baseOpts = {
@@ -59,7 +73,8 @@ test('createAuthorProfileTool defines valid tool schema and executes', async () 
 
   assert.equal(tool.name, 'x_author_profile')
   assert.equal(tool.__wrappedWithDefineTool, true)
-  assert.ok(tool.parameters.handle)
+  assert.equal(tool.parameters.type, 'object')
+  assert.ok(tool.parameters.properties.handle)
 
   const res = await tool.execute({
     handle: '@ylecun',

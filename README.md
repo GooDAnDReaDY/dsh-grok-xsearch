@@ -173,6 +173,10 @@ dsh-grok-xsearch:
 
 ---
 
+## Compatibility
+
+Version 0.3.3 hardens compatibility with mixed DeepSeek Harness alpha/rc peer resolutions. All four registered tools now expose an object-root JSON Schema (parameters.type = "object" with properties and required) even when an older dsh-tools runtime returns the legacy property-map form. Tool behavior and OAuth/API contracts are unchanged.
+
 ## 📦 Quick Installation
 
 ```bash

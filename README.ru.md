@@ -200,3 +200,7 @@ dsh plugin --profile web add @goodandready/dsh-grok-xsearch
 ## 📄 Лицензия
 
 MIT © [GooDAnDReaDY](https://github.com/GooDAnDReaDY)
+
+## Совместимость
+
+Версия 0.3.3 усиливает совместимость со смешанными alpha/rc-версиями зависимостей DeepSeek Harness. Все четыре инструмента теперь всегда экспортируют JSON Schema с корнем type: "object" (properties и required), даже если старая версия dsh-tools вернула карту свойств legacy-формата. Поведение инструментов и OAuth/API-контракты не изменены.
