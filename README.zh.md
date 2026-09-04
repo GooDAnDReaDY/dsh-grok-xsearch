@@ -90,3 +90,7 @@ dsh plugin --profile web add @goodandready/dsh-grok-xsearch
 ## 📄 许可证
 
 MIT © [GooDAnDReaDY](https://github.com/GooDAnDReaDY)
+
+## 兼容性
+
+0.3.3 版本增强了与混用 DeepSeek Harness alpha/rc 依赖版本的兼容性。四个工具现在始终导出根节点为 type: "object" 的 JSON Schema（包含 properties 和 required），即使旧版 dsh-tools 返回 legacy 属性映射格式。工具行为及 OAuth/API 契约保持不变。
