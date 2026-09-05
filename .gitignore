@@ -7,3 +7,5 @@ node_modules/
 credentials.yaml
 .planning/
 *.log
+*.tgz
+.worktrees/
