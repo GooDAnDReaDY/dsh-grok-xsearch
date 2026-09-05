@@ -20,7 +20,7 @@ async function loadFactory() {
 }
 
 /** Минимальный React: apply() его не трогает, он нужен только фабрике. */
-const fakeRequire = () => ({ createElement: () => null, useState: () => [false, () => {}] })
+const fakeRequire = () => ({ createElement: () => null, useState: () => [false, () => {}], useRef: () => ({ current: null }), useEffect: () => {} })
 
 /** Контекст, записывающий всё, что в нём регистрируют. */
 function fakeCtx({ declared }) {
@@ -31,7 +31,11 @@ function fakeCtx({ declared }) {
     effects,
     slots: {
       inject(name, run) {
-        if (declared.includes(name)) run()
+        if (declared.includes(name)) {
+          run()
+          return true
+        }
+        return false
       },
       register(options, component) {
         registered.push({ name: options.name, key: options.key, id: options.id, component })
@@ -70,18 +74,24 @@ test('ключ карточки совпадает с пространством
   assert.equal(card.key, 'dsh-grok-xsearch')
 })
 
-test('в сборке без вкладки «Плагины» остаётся прежний раздел', async () => {
-  // Слот объявляет настроечный пакет ядра. Нет пакета — нет слота, и без
-  // запасного пути настройки пропали бы совсем.
+test('в сборке без вкладки «Плагины» сразу срабатывает запасной раздел без ожидания таймера', async () => {
+  // Слот объявляет настроечный пакет ядра. Нет пакета — нет слота, и запасной
+  // раздел регистрируется сразу, без 3-секундного таймера (Issue #26).
   const registration = await loadFactory()
   const exported = registration.factory(fakeRequire)
   const ctx = fakeCtx({ declared: ['settings.section'] })
   exported.apply(ctx)
 
-  assert.equal(ctx.registered.length, 0, 'сразу ничего не регистрируем: ждём слот')
-  await new Promise((resolve) => setTimeout(resolve, 3200))
-
   const section = ctx.registered.find((r) => r.name === 'settings.section')
-  assert.ok(section, 'через ожидание должен появиться раздел')
+  assert.ok(section, 'должен сразу появиться запасной раздел')
   assert.equal(section.id, '@goodandready/dsh-grok-xsearch')
+  assert.equal(ctx.registered.some((r) => r.name === 'settings.plugin.item'), false)
+})
+
+test('клиент экспортирует inject с settingsScope для привязки снимка настроек', async () => {
+  const registration = await loadFactory()
+  const exported = registration.factory(fakeRequire)
+  assert.ok(Array.isArray(exported.inject), 'inject должен быть массивом')
+  assert.ok(exported.inject.includes('settingsScope'), 'inject обязан запрашивать settingsScope (Issue #24)')
+  assert.ok(exported.inject.includes('slots'), 'inject обязан содержать slots')
 })
