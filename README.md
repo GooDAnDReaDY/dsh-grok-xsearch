@@ -171,11 +171,18 @@ dsh-grok-xsearch:
 | `enableCache` | `boolean` | `true` | In-memory cache for recent search queries |
 | `cacheTtlSeconds` | `number` | `300` | Cache retention time in seconds |
 
----
+## Compatibility & Stability
 
-## Compatibility
+- **Version 0.3.8 (Architecture & Stability Hardening)**:
+  - **Single-Flight OAuth Mutex**: Prevents concurrent request token refresh races by consolidating simultaneous refresh triggers into a single upstream request.
+  - **Auto-Recovery on HTTP 401 Unauthorized**: If an access token expires mid-operation, tools automatically perform an explicit token refresh and retry the search query transparently.
+  - **Network & Transient Error Backoff**: Added exponential backoff retry logic for upstream network and 5xx transient failures.
+  - **In-Memory Catalog Caching**: Cached xAI model catalog lookups (`listModelsForSettings`, 15-minute TTL) eliminate UI setting panel loading stalls.
+  - **Citation Canonicalization & Tracking Stripping**: Automatically removes URL tracking parameters (`?s=`, `?t=`, `ref_src`, `utm_*`) and harmonizes `twitter.com` into canonical `https://x.com/<handle>/status/<id>` citations to eliminate duplicate citations.
+  - **Streamlined OAuth Pending Store**: Replaced multi-file disk pending store with a lightweight in-memory Map with automatic TTL expiration.
+  - **Settings Scope Race Elimination**: Removed dual-write race in client settings UI to use single authoritative HTTP config persistence.
 
-Version 0.3.3 hardens compatibility with mixed DeepSeek Harness alpha/rc peer resolutions. All four registered tools now expose an object-root JSON Schema (parameters.type = "object" with properties and required) even when an older dsh-tools runtime returns the legacy property-map form. Tool behavior and OAuth/API contracts are unchanged.
+- **Version 0.3.3**: Hardens compatibility with mixed DeepSeek Harness alpha/rc peer resolutions. All four registered tools expose an object-root JSON Schema (`type: "object"` with `properties` and `required`) even when an older `dsh-tools` runtime returns the legacy property-map form. Tool behavior and OAuth/API contracts are unchanged.
 
 ## 📦 Quick Installation
 
