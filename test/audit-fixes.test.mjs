@@ -82,3 +82,47 @@ test('listModelsForSettings respects timeout signal and does not hang', async ()
   assert.ok(signalReceived != null)
   assert.ok(models.some((m) => m.id === 'grok-4.5'))
 })
+
+test('accessToken deduplicates concurrent refresh calls (single-flight mutex)', async () => {
+  const { getValidAccessToken } = await import('../lib/token-manager.js')
+  let refreshCalls = 0
+
+  const fakeCtx = {
+    credentials: {
+      resolve: async () => ({
+        value: JSON.stringify({
+          accessToken: 'old-access',
+          refreshToken: 'valid-refresh',
+          expiresAt: Date.now() - 10000, // expired
+        }),
+      }),
+      set: async () => {},
+    },
+  }
+
+  const mockFetch = async () => {
+    refreshCalls++
+    await new Promise((r) => setTimeout(r, 20))
+    return {
+      ok: true,
+      text: async () => JSON.stringify({
+        access_token: 'refreshed-token',
+        refresh_token: 'new-refresh',
+        expires_in: 3600,
+      }),
+    }
+  }
+
+  const [t1, t2, t3] = await Promise.all([
+    getValidAccessToken(fakeCtx, { grokClientId: 'cid' }, false, mockFetch),
+    getValidAccessToken(fakeCtx, { grokClientId: 'cid' }, false, mockFetch),
+    getValidAccessToken(fakeCtx, { grokClientId: 'cid' }, false, mockFetch),
+  ])
+
+  assert.equal(t1, 'refreshed-token')
+  assert.equal(t2, 'refreshed-token')
+  assert.equal(t3, 'refreshed-token')
+  assert.equal(refreshCalls, 1)
+})
+
+
