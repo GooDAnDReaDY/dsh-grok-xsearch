@@ -158,3 +158,56 @@ test('runXSearch rejects conflicting handle filters', async () => {
     fetchImpl: async () => ({ ok: true, text: async () => '{}' }),
   }), /cannot be used together/)
 })
+
+test('runXSearch auto-recovers on HTTP 401 with onUnauthorized hook', async () => {
+  clearXSearchCache()
+  let attempts = 0
+  let hookCalled = 0
+  const fetchImpl = async (url, init) => {
+    attempts++
+    const authHeader = init.headers?.authorization || init.headers?.Authorization
+    if (authHeader === 'Bearer old-tok') {
+      return {
+        ok: false,
+        status: 401,
+        text: async () => JSON.stringify({ error: { message: 'Token expired' } }),
+      }
+    }
+    return {
+      ok: true,
+      status: 200,
+      text: async () => JSON.stringify({ output_text: 'Recovered answer', citations: [] }),
+    }
+  }
+
+  const result = await runXSearch({
+    accessToken: 'old-tok',
+    model: 'grok-4.6',
+    query: 'test query',
+    enable_cache: false,
+    fetchImpl,
+    onUnauthorized: async () => {
+      hookCalled++
+      return 'new-tok'
+    },
+  })
+
+  assert.equal(result.success, true)
+  assert.equal(result.answer, 'Recovered answer')
+  assert.equal(hookCalled, 1)
+  assert.equal(attempts, 2)
+})
+
+test('extractCitations canonicalizes tracking params and deduplicates tweet URLs', () => {
+  const cites = extractCitations({
+    citations: [
+      { url: 'https://twitter.com/elonmusk/status/123456?s=20&t=abcdef', title: 'Tweet 1' },
+      { url: 'https://x.com/elonmusk/status/123456?ref_src=twsrc', title: 'Tweet 1 duplicate' },
+      { url: 'https://x.com/elonmusk/status/789012', title: 'Tweet 2' },
+    ],
+  })
+  assert.equal(cites.length, 2)
+  assert.equal(cites[0].url, 'https://x.com/elonmusk/status/123456')
+  assert.equal(cites[1].url, 'https://x.com/elonmusk/status/789012')
+})
+

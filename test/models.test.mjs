@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { DEFAULT_XSEARCH_MODEL, XSEARCH_MODELS, listModelsForSettings, mergeModels, normalizeXSearchModel } from '../lib/models.js'
+import { DEFAULT_XSEARCH_MODEL, XSEARCH_MODELS, listModelsForSettings, mergeModels, normalizeXSearchModel, clearModelsCache } from '../lib/models.js'
 
 test('default model is grok-4.6', () => {
   assert.equal(DEFAULT_XSEARCH_MODEL, 'grok-4.6')
@@ -18,6 +18,7 @@ test('normalizeXSearchModel falls back to default', () => {
 })
 
 test('listModelsForSettings merges API models with static fallback', async () => {
+  clearModelsCache()
   const models = await listModelsForSettings({
     accessToken: 'token',
     baseUrl: 'https://api.x.ai/v1',
@@ -33,7 +34,28 @@ test('listModelsForSettings merges API models with static fallback', async () =>
   assert.ok(models.some((row) => row.id === 'grok-4.6'))
 })
 
+test('listModelsForSettings caches response and avoids second network call', async () => {
+  clearModelsCache()
+  let fetchCount = 0
+  const fetchImpl = async () => {
+    fetchCount++
+    return {
+      ok: true,
+      async json() {
+        return { data: [{ id: 'grok-4.5', name: 'Grok 4.5' }] }
+      },
+    }
+  }
+
+  const res1 = await listModelsForSettings({ accessToken: 'token-cached', fetchImpl })
+  const res2 = await listModelsForSettings({ accessToken: 'token-cached', fetchImpl })
+  assert.equal(fetchCount, 1)
+  assert.deepEqual(res1, res2)
+  clearModelsCache()
+})
+
 test('mergeModels keeps preferred order', () => {
   const rows = mergeModels([{ id: 'grok-4', name: 'Grok 4' }, { id: 'grok-4.6', name: 'Grok 4.6' }])
   assert.equal(rows[0].id, 'grok-4.6')
 })
+
