@@ -173,6 +173,14 @@ dsh-grok-xsearch:
 
 ## Compatibility & Stability
 
+- **Version 0.3.9 (Robustness & Resilience Hardening)**:
+  - **Token Request Socket Timeout**: `formTokenRequest` in `lib/wire.js` now enforces a strict 15-second `AbortSignal.timeout` preventing hanging sockets during token exchanges or refresh attempts.
+  - **Auto-Eviction of Invalid Credentials**: When upstream refresh returns fatal `invalid_grant` or HTTP 400, stored invalid credentials blob is automatically purged from DSH credentials store to prevent infinite retry storms.
+  - **OAuth Error Handling in Callback**: Handles `?error=` and `?error_description=` query parameters from xAI OAuth provider (e.g. user denied permissions) cleanly, displaying actionable instructions instead of cryptic "Missing code" errors.
+  - **Proactive Cache Pruning & Capacity Limits**: `SEARCH_CACHE` (search queries) and `MODELS_CACHE` (xAI model catalog) proactively prune expired entries upon insertion and enforce upper capacity bounds to prevent memory bloat.
+  - **UI Cache Management**: The settings card now displays live in-memory cache usage and provides an interactive "Clear cache" button calling `/dsh-grok-xsearch/cache/clear`.
+  - **Formal Design Contract**: Added comprehensive `docs/design/DESIGN.md` specifying all agent tools, UI card states, foundations, user flows, and locked design decisions.
+
 - **Version 0.3.8 (Architecture & Stability Hardening)**:
   - **Single-Flight OAuth Mutex**: Prevents concurrent request token refresh races by consolidating simultaneous refresh triggers into a single upstream request.
   - **Auto-Recovery on HTTP 401 Unauthorized**: If an access token expires mid-operation, tools automatically perform an explicit token refresh and retry the search query transparently.
