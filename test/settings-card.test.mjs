@@ -1,10 +1,6 @@
-// Куда плагин кладёт свои настройки.
-//
-// Проверяем не текст исходника, а то, что клиентская половина реально
-// регистрирует: ключ карточки обязан совпадать с пространством настроек, иначе
-// вкладка «Плагины» её не найдёт — молча, без ошибки.
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
+import fs from 'node:fs'
 
 /** Загрузить фабрику клиентской половины с подставным окружением. */
 async function loadFactory() {
@@ -63,8 +59,6 @@ test('настройки регистрируются карточкой, а н�
 })
 
 test('ключ карточки совпадает с пространством настроек', async () => {
-  // Расхождение здесь не даёт ни ошибки, ни следа в журнале: вкладка просто
-  // ничего не находит. Поэтому проверяем точное значение, а не «что-то есть».
   const registration = await loadFactory()
   const exported = registration.factory(fakeRequire)
   const ctx = fakeCtx({ declared: ['settings.plugin.item'] })
@@ -75,8 +69,6 @@ test('ключ карточки совпадает с пространством
 })
 
 test('в сборке без вкладки «Плагины» сразу срабатывает запасной раздел без ожидания таймера', async () => {
-  // Слот объявляет настроечный пакет ядра. Нет пакета — нет слота, и запасной
-  // раздел регистрируется сразу, без 3-секундного таймера (Issue #26).
   const registration = await loadFactory()
   const exported = registration.factory(fakeRequire)
   const ctx = fakeCtx({ declared: ['settings.section'] })
@@ -94,4 +86,44 @@ test('клиент экспортирует inject с settingsScope для пр�
   assert.ok(Array.isArray(exported.inject), 'inject должен быть массивом')
   assert.ok(exported.inject.includes('settingsScope'), 'inject обязан запрашивать settingsScope (Issue #24)')
   assert.ok(exported.inject.includes('slots'), 'inject обязан содержать slots')
+})
+
+test('все 10 полей схемы Config объявлены и обрабатываются в клиенте и сервере (Issue #33)', async () => {
+  const expectedFields = [
+    'enabled',
+    'grokClientId',
+    'redirectUri',
+    'baseUrl',
+    'model',
+    'timeoutSeconds',
+    'retries',
+    'autoFallbackModel',
+    'enableCache',
+    'cacheTtlSeconds',
+  ]
+  assert.equal(expectedFields.length, 10, 'в схеме Config должно быть ровно 10 полей')
+
+  // Проверяем объявление в lib/index.js
+  const indexSrc = fs.readFileSync(new URL('../lib/index.js', import.meta.url), 'utf8')
+  for (const field of expectedFields) {
+    assert.ok(
+      indexSrc.includes(field + ':'),
+      `поле схемы "${field}" обязано быть объявлено в lib/index.js Config`,
+    )
+  }
+
+  // Проверяем, что в клиентском коде упоминаются все эти поля в состояниях и обработчиках
+  const clientSrc = fs.readFileSync(new URL('../lib/client.js', import.meta.url), 'utf8')
+  for (const field of expectedFields) {
+    assert.ok(
+      clientSrc.includes(field),
+      `поле схемы "${field}" обязано присутствовать и обрабатываться в lib/client.js`,
+    )
+  }
+
+  // Проверяем наличие безопасного чтения сервиса через typeof props.ctx.get === 'function'
+  assert.ok(
+    clientSrc.includes("typeof props.ctx.get === 'function' ? props.ctx.get('settingsScope')"),
+    'разрешение settingsScope обязано безопасно проверять props.ctx.get',
+  )
 })

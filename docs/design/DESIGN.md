@@ -87,3 +87,4 @@
 - **2026-09-03**: JSON Schema с `type: "object"` и `additionalProperties: false` зафиксирована как обязательный контракт совместимости для DSH tools.
 - **2026-09-08**: Реализован single-flight mutex для refresh-токена, 401 auto-recovery, каноникализация ссылок X (x.com/handle/status/id) и in-memory кэш ответов.
 - **2026-09-09**: Таймаут 15с для авторизационных запросов, сброс blob при `invalid_grant`, обработка `error` в OAuth callback, оптимизированная чистка кэша и кнопка сброса кэша в UI.
+- **2026-09-10**: Подтверждена бескомпромиссная регистрация настроек через карточку `settings.plugin.item` (слот `settings.section` оставлен исключительно как fallback). Все 10 полей схемы Config (включая enabled, timeoutSeconds, retries, cacheTtlSeconds, baseUrl, redirectUri) доступны в карточке (базовые параметры + сворачиваемый блок «Дополнительно»).
