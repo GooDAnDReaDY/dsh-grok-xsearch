@@ -173,6 +173,15 @@ dsh-grok-xsearch:
 
 ## Compatibility & Stability
 
+- **Version 0.3.10 (UI Redesign & Comprehensive Hardening)**:
+  - **Unified dsh-clinebot Styling**: Rebuilt settings surface to mirror the reference `dsh-clinebot` architecture: isolated `.gx-section-card` containers, soft translucent status badges, adaptive inputs, and native `--dsw-alias-*` styling tokens.
+  - **Slot Error Isolation**: Integrated React `ErrorBoundary` component around settings views to catch and isolate runtime errors with inline retry capabilities, preventing parent DSH slot crashes.
+  - **Interactive Cache Telemetry Meter**: Added live LRU cache visualizer (`.gx-bar-container`, track, and animated percentage fill) with one-click cache purge action.
+  - **Safe Service Resolution**: Replaced brittle credentials proxy accesses with defensive resolution `(typeof ctx?.get === 'function' ? ctx.get('credentials') : ctx?.credentials)` in `lib/token-manager.js`.
+  - **Dynamic User-Agent**: Configured dynamic package version detection (`dsh-grok-xsearch/${PKG_VERSION}`) in `lib/xsearch.js` for upstream telemetry.
+  - **Dead Code Pruning**: Eliminated legacy uncalled functions `publicAccountView`, `requestOrigin`, and `webCallbackUri`.
+  - **Extended Test Coverage**: Added `test/helpers.test.mjs` verifying `blob.js`, `oauth.js`, `http.js`, `wire.js`, `pkce.js`, and `jwt.js` (58/58 test suite passing).
+
 - **Version 0.3.9 (Robustness & Resilience Hardening)**:
   - **Token Request Socket Timeout**: `formTokenRequest` in `lib/wire.js` now enforces a strict 15-second `AbortSignal.timeout` preventing hanging sockets during token exchanges or refresh attempts.
   - **Auto-Eviction of Invalid Credentials**: When upstream refresh returns fatal `invalid_grant` or HTTP 400, stored invalid credentials blob is automatically purged from DSH credentials store to prevent infinite retry storms.
