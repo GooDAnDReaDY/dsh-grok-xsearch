@@ -49,6 +49,8 @@ graph LR
         Select --> T2[x_author_profile: Stance & Timeline]
         Select --> T3[x_trending_topics: Live Trends]
         Select --> T4[x_fact_check_notes: Community Notes]
+        Select --> T5[x_thread_reader: Thread Context]
+        Select --> T6[x_find_experts: Expert Discovery]
     end
 
     subgraph SearchEngine [dsh-grok-xsearch Execution Engine]
@@ -82,7 +84,7 @@ graph LR
 
 ## 🛠️ Complete Tool Suite Reference
 
-The plugin registers four purpose-built tools in `ctx.tools`:
+The plugin registers six purpose-built tools in `ctx.tools`:
 
 ### 1. `x_search` — Deep Post & Thread Search
 
@@ -104,6 +106,7 @@ General-purpose natural language search across X posts, threads, media, and enga
 | `min_reposts` | `number` | No | Minimum reposts/retweets threshold |
 | `enable_image_understanding` | `boolean` | No | Let xAI inspect and extract data from images and charts |
 | `enable_video_understanding` | `boolean` | No | Let xAI analyze video clips and speech |
+| `extract_tables` | `boolean` | No | Extract benchmarks, financial metrics, or comparison tables into Markdown format |
 
 ---
 
@@ -144,6 +147,32 @@ Investigates claims, viral rumors, or news stories for Community Notes, expert r
 | `target_url` | `string` | No | Specific X post or article URL to verify |
 | `allowed_x_handles` | `string` | No | Comma-separated researcher or institutional handles to check |
 | `enable_image_understanding` | `boolean` | No | Inspect attached images or infographics in debunking posts |
+
+---
+
+### 5. `x_thread_reader` — Thread Reconstruction & Discussion Reader
+
+Reconstructs full multi-tweet threads, author continuations, and high-engagement discussion trees by tweet URL or numeric status ID.
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `tweet_url_or_id` | `string` | **Yes** | Tweet URL (e.g. `https://x.com/username/status/1234567890`) or numeric tweet ID |
+| `include_replies` | `boolean` | No | Include notable community replies and expert rebuttals (default: `true`) |
+| `max_depth` | `number` | No | Maximum thread depth to retrieve (default: `10`, max: `25`) |
+| `extract_tables` | `boolean` | No | Format benchmarks, charts, and metrics from thread media into Markdown tables |
+
+---
+
+### 6. `x_find_experts` — Domain Expert & Key Opinion Leader Discovery
+
+Discovers verified practitioners, seminal researchers, and high-signal domain contributors on X by topic or technology.
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `domain_or_topic` | `string` | **Yes** | Domain, research field, technology, or topic (e.g. `quantum computing`, `distributed LLM training`) |
+| `min_followers` | `number` | No | Optional minimum followers threshold |
+| `language` | `string` | No | Language focus code (e.g. `en`, `zh`) |
+| `limit` | `number` | No | Number of expert profiles to return (default: `5`, max: `15`) |
 
 ---
 
