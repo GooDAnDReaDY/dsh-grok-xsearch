@@ -63,6 +63,7 @@
 | `min_reposts` | `number` | 否 | 最低转发数阈值 |
 | `enable_image_understanding` | `boolean` | 否 | 允许 xAI 提取和分析图像/图表数据 |
 | `enable_video_understanding` | `boolean` | 否 | 允许 xAI 分析视频片段与语音 |
+| `extract_tables` | `boolean` | 否 | 将帖子配图与信息图中的基准测试、财务数据或对比表格提取为 Markdown 格式 |
 
 ### 2. `x_author_profile` — 作者观点与历史分析
 * `handle`: 用户名 (`@username`)
@@ -79,12 +80,24 @@
 * `target_url`: 相关推文或文章链接
 * `allowed_x_handles`: 权威核查机构或专家账号
 
+### 5. `x_thread_reader` — 长推文讨论串深度还原
+* `tweet_url_or_id`: 推文链接 (`https://x.com/username/status/...`) 或推文 ID
+* `include_replies`: 是否包含高互动优质社区回复与反驳 (默认: `true`)
+* `max_depth`: 讨论串最大抓取深度 (默认: `10`, 最大: `25`)
+* `extract_tables`: 将讨论串所附图表与基准数据提取为 Markdown 表格
+
+### 6. `x_find_experts` — 领域权威专家与领袖发现
+* `domain_or_topic`: 研究领域、技术栈或核心议题 (例如 `量子计算`, `LLM 推理`)
+* `min_followers`: 可选的最低关注者门槛
+* `language`: 语言代码 (例如 `en`, `zh`)
+* `limit`: 返回数量 (默认: `5`, 最大: `15`)
+
 ---
 
 ## 🛡️ 弹性与性能特性
 
 * **智能模型自动降级**: 在 `grok-4.6` 遇到 429 速率限制时，自动切换至 `grok-4.5` 保证任务顺利完成。
-* **内存 TTL 缓存**: 5分钟内重复查询直接从缓存命中，节省 API 配额。
+* **持久化磁盘与内存 TTL 缓存**: 5分钟内重复查询极速命中，支持磁盘持久化、429 负缓存保护与实时命中率监控。
 * **多语言本地化**: 完美支持英语、中文和俄语设置界面。
 
 ---

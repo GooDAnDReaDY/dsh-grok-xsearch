@@ -1,6 +1,6 @@
 {
   "name": "@goodandready/dsh-grok-xsearch",
-  "version": "0.3.10",
+  "version": "0.3.11",
   "description": "Real-time X (Twitter) search, author profiling, trends, and fact-checking tool suite powered by SuperGrok OAuth for DeepSeek Harness.",
   "license": "MIT",
   "type": "module",
@@ -15,6 +15,8 @@
     "lib/",
     "cordis.patch.yml",
     "README.md",
+    "README.ru.md",
+    "README.zh.md",
     "LICENSE"
   ],
   "keywords": [
