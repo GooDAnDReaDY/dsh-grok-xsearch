@@ -9,3 +9,7 @@ credentials.yaml
 *.log
 *.tgz
 .worktrees/
+AGENTS.md
+index.md
+docs/plans/
+docs/architecture/
