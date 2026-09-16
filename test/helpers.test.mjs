@@ -154,14 +154,14 @@ test('http.js isTrustedSettingsRequest validates origin, fetch-site, and loopbac
 
   // 2. Non-loopback with matching origin/host
   assert.equal(isTrustedSettingsRequest({
-    headers: { host: '192.168.1.111:3080', origin: 'http://192.168.1.111:3080' },
-    socket: { remoteAddress: '192.168.1.50' },
+    headers: { host: '10.0.0.1:3080', origin: 'http://10.0.0.1:3080' },
+    socket: { remoteAddress: '10.0.0.50' },
   }), true)
 
   // 3. Non-loopback with matching referer/host
   assert.equal(isTrustedSettingsRequest({
     headers: { host: 'dsh.local:3080', referer: 'https://dsh.local:3080/settings' },
-    socket: { remoteAddress: '192.168.1.50' },
+    socket: { remoteAddress: '10.0.0.50' },
   }), true)
 
   // 4. Same-origin or same-site fetch headers
@@ -170,14 +170,14 @@ test('http.js isTrustedSettingsRequest validates origin, fetch-site, and loopbac
 
   // 5. Fail-closed: external caller with no sec-fetch-site and mismatching origin
   assert.equal(isTrustedSettingsRequest({
-    headers: { host: '192.168.1.111:3080', origin: 'http://evil.com' },
-    socket: { remoteAddress: '192.168.1.50' },
+    headers: { host: '10.0.0.1:3080', origin: 'http://evil.com' },
+    socket: { remoteAddress: '10.0.0.50' },
   }), false)
 
   // 6. External caller with no sec-fetch-site, no origin
   assert.equal(isTrustedSettingsRequest({
-    headers: { host: '192.168.1.111:3080' },
-    socket: { remoteAddress: '192.168.1.50' },
+    headers: { host: '10.0.0.1:3080' },
+    socket: { remoteAddress: '10.0.0.50' },
   }), false)
 
   // 7. Null/missing request
