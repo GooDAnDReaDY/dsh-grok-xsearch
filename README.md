@@ -212,6 +212,14 @@ dsh-grok-xsearch:
 
 ## Compatibility & Stability
 
+- **Version 0.3.12 (One-Click Updater, Route Security Hardening & Client Decomposition)**:
+  - **One-Click Updater (`lib/updater.js`)**: Added host-side `/api/dsh-grok-xsearch/update` route and settings card update UI for version checking, update status inspection, and one-click upgrades with semver prerelease support and standard pnpm package resolution.
+  - **Fail-Closed Route Security**: Upgraded write routes (`/config`, `/cache/clear`, `/oauth/complete`, `/logout`, `/api/dsh-grok-xsearch/update`) with strict loopback and origin/referer verification protecting against DNS rebinding and cross-site request forgery (CSRF).
+  - **Client UI Decomposition**: Streamlined and decomposed `lib/client.js` below 600 lines with reusable input field helpers and compact layout while strictly retaining browser ModuleLoader self-containment.
+  - **Tool Registration Resilience**: Safe companion tool registration wrapped with `ctx.logger.warn` to log diagnostics instead of silent error swallowing.
+  - **Locale Lifecycle Disposer**: Client locale registration moved inside `ctx.effect` with disposer cleanup.
+  - **Package Metadata Alignment**: Populated `dsh.client.inject` with `@deepseek-ai/dsh-client-locale` and `@deepseek-ai/dsh-client-ui-settings`.
+
 - **Version 0.3.10 (UI Redesign & Comprehensive Hardening)**:
   - **Unified dsh-clinebot Styling**: Rebuilt settings surface to mirror the reference `dsh-clinebot` architecture: isolated `.gx-section-card` containers, soft translucent status badges, adaptive inputs, and native `--dsw-alias-*` styling tokens.
   - **Slot Error Isolation**: Integrated React `ErrorBoundary` component around settings views to catch and isolate runtime errors with inline retry capabilities, preventing parent DSH slot crashes.

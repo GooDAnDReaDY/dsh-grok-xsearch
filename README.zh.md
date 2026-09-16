@@ -116,4 +116,12 @@ MIT © [GooDAnDReaDY](https://github.com/GooDAnDReaDY)
 
 ## 兼容性
 
-0.3.3 版本增强了与混用 DeepSeek Harness alpha/rc 依赖版本的兼容性。四个工具现在始终导出根节点为 type: "object" 的 JSON Schema（包含 properties 和 required），即使旧版 dsh-tools 返回 legacy 属性映射格式。工具行为及 OAuth/API 契约保持不变。
+- **版本 0.3.12 (一键更新模块、路由安全增强与客户端精简)**:
+  - **一键更新模块 (`lib/updater.js`)**: 新增主机端 `/api/dsh-grok-xsearch/update` 路由与设置卡片更新区块，支持版本检查、预发布版本识别及标准安装。
+  - **Fail-Closed 严格路由防护**: 为写操作路由补充基于 loopback 与 origin/referer 的校验，防御 DNS 重新绑定与 CSRF 攻击。
+  - **客户端代码精简与解耦**: 将 `lib/client.js` 行数精简至 589 行（低于 600 行限制），保持 ModuleLoader 浏览器独立性与所有 10 项配置功能。
+  - **工具安全注册**: 使用带日志记录的 `registerToolSafe` 替代静默异常捕获。
+  - **语言包生命周期管理**: 客户端语言包注册使用 `ctx.effect` 与清理回调。
+  - **补齐客户端注入声明**: 在 `package.json` 中配置 `dsh.client.inject`。
+
+- **0.3.3 版本**: 增强了与混用 DeepSeek Harness alpha/rc 依赖版本的兼容性。四个工具现在始终导出根节点为 type: "object" 的 JSON Schema（包含 properties 和 required），即使旧版 dsh-tools 返回 legacy 属性映射格式。工具行为及 OAuth/API 契约保持不变。
