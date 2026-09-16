@@ -6,6 +6,7 @@ import { escapeHtml, writeJson, writeHtml, readBody, isTrustedSettingsRequest, q
 import { tokenBlobFromOAuth, formTokenRequest } from '../lib/wire.js'
 import { createPkce } from '../lib/pkce.js'
 import { emailFromToken } from '../lib/jwt.js'
+import { clearRefreshMutex } from '../lib/token-manager.js'
 import { Readable } from 'node:stream'
 
 test('blob.js serializeBlob and parseBlob round-trip valid credentials', () => {
@@ -72,27 +73,22 @@ test('oauth.js buildAuthorizeUrl constructs valid OAuth authorization endpoint',
 })
 
 test('oauth.js parseCallbackInput handles various input formats', () => {
-  // 1. Full redirect URL
   const res1 = parseCallbackInput('http://127.0.0.1:56121/callback?code=auth_code_123&state=state_456')
   assert.equal(res1.code, 'auth_code_123')
   assert.equal(res1.state, 'state_456')
 
-  // 2. Fragment URL
   const res2 = parseCallbackInput('http://127.0.0.1:56121/callback#code=auth_code_fragment&state=state_fragment')
   assert.equal(res2.code, 'auth_code_fragment')
   assert.equal(res2.state, 'state_fragment')
 
-  // 3. Raw code#state string
   const res3 = parseCallbackInput('raw_code_value#raw_state_value')
   assert.equal(res3.code, 'raw_code_value')
   assert.equal(res3.state, 'raw_state_value')
 
-  // 4. Raw code string only
   const res4 = parseCallbackInput('only_code_value')
   assert.equal(res4.code, 'only_code_value')
   assert.equal(res4.state, '')
 
-  // 5. Empty / null input
   const res5 = parseCallbackInput('')
   assert.equal(res5.code, '')
   assert.equal(res5.state, '')
@@ -149,11 +145,44 @@ test('http.js readBody parses stream within limit and rejects oversized payload'
   }, /body too large/)
 })
 
-test('http.js isTrustedSettingsRequest checks sec-fetch-site', () => {
+test('http.js isTrustedSettingsRequest validates origin, fetch-site, and loopback', () => {
+  // 1. Loopback addresses are trusted unless explicit cross-site
+  assert.equal(isTrustedSettingsRequest({ headers: {}, socket: { remoteAddress: '127.0.0.1' } }), true)
+  assert.equal(isTrustedSettingsRequest({ headers: {}, socket: { remoteAddress: '::1' } }), true)
+  assert.equal(isTrustedSettingsRequest({ headers: {}, socket: { remoteAddress: '::ffff:127.0.0.1' } }), true)
+  assert.equal(isTrustedSettingsRequest({ headers: { 'sec-fetch-site': 'cross-site' }, socket: { remoteAddress: '127.0.0.1' } }), false)
+
+  // 2. Non-loopback with matching origin/host
+  assert.equal(isTrustedSettingsRequest({
+    headers: { host: '192.168.1.111:3080', origin: 'http://192.168.1.111:3080' },
+    socket: { remoteAddress: '192.168.1.50' },
+  }), true)
+
+  // 3. Non-loopback with matching referer/host
+  assert.equal(isTrustedSettingsRequest({
+    headers: { host: 'dsh.local:3080', referer: 'https://dsh.local:3080/settings' },
+    socket: { remoteAddress: '192.168.1.50' },
+  }), true)
+
+  // 4. Same-origin or same-site fetch headers
   assert.equal(isTrustedSettingsRequest({ headers: { 'sec-fetch-site': 'same-origin' } }), true)
   assert.equal(isTrustedSettingsRequest({ headers: { 'sec-fetch-site': 'same-site' } }), true)
-  assert.equal(isTrustedSettingsRequest({ headers: { 'sec-fetch-site': 'none' } }), true)
-  assert.equal(isTrustedSettingsRequest({ headers: { 'sec-fetch-site': 'cross-site' } }), false)
+
+  // 5. Fail-closed: external caller with no sec-fetch-site and mismatching origin
+  assert.equal(isTrustedSettingsRequest({
+    headers: { host: '192.168.1.111:3080', origin: 'http://evil.com' },
+    socket: { remoteAddress: '192.168.1.50' },
+  }), false)
+
+  // 6. External caller with no sec-fetch-site, no origin
+  assert.equal(isTrustedSettingsRequest({
+    headers: { host: '192.168.1.111:3080' },
+    socket: { remoteAddress: '192.168.1.50' },
+  }), false)
+
+  // 7. Null/missing request
+  assert.equal(isTrustedSettingsRequest(null), false)
+  assert.equal(isTrustedSettingsRequest({}), false)
 })
 
 test('http.js queryOf safely parses URL search parameters', () => {
@@ -191,8 +220,6 @@ test('pkce.js createPkce generates valid verifier, challenge and state', async (
 })
 
 test('jwt.js emailFromToken extracts email or sub from JWT payload', () => {
-  // Header: {"alg":"none"} -> eyJhbGciOiJub25lIn0
-  // Payload: {"email":"test@xai.com","sub":"user_123"}
   const payloadJson = JSON.stringify({ email: 'test@xai.com', sub: 'user_123' })
   const payloadB64 = Buffer.from(payloadJson).toString('base64url')
   const fakeToken = `eyJhbGciOiJub25lIn0.${payloadB64}.`
@@ -200,8 +227,11 @@ test('jwt.js emailFromToken extracts email or sub from JWT payload', () => {
   const extracted = emailFromToken(fakeToken)
   assert.equal(extracted, 'test@xai.com')
 
-  // Malformed token returns empty string
   assert.equal(emailFromToken('not-a-jwt'), '')
   assert.equal(emailFromToken(''), '')
   assert.equal(emailFromToken(null), '')
+})
+
+test('token-manager.js clearRefreshMutex resets in-flight mutex', () => {
+  assert.doesNotThrow(() => clearRefreshMutex())
 })
