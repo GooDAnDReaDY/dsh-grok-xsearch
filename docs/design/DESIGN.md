@@ -98,4 +98,7 @@
   - В package.json объявлен dsh.client.inject (dsh-client-locale, dsh-client-ui-settings) (#46).
   - Удалён мёртвый экспорт modelOptions и покрыты тестами очистители кэша и мьютекса (#48).
   - Репозиторий очищен от служебных файлов планирования и устаревших архивов (#41, #44).
-
+- **2026-09-17 (Issue #48 State Lifecycle Disposers & Export Hygiene)**:
+  - Подключены функции сброса состояния (`clearPendingStore`, `clearRefreshMutex`, `clearModelsCache`) в диспозер эффекта жизненного цикла плагина (`ctx.effect`) и в обработчики маршрутов `/logout` и `/cache/clear` (#48).
+  - Проверено и подтверждено поведение сброса мьютекса обновления токена в блоке `finally` (`refreshInFlight = null`).
+  - Устранены избыточные модификаторы `export` у внутренних функций и констант (`sortModels`, `MODELS_CACHE_TTL_MS`, `PENDING_TTL_MS`, `loadPending`, `listPending`, `runtime`, `getUpdateStatus`, `installExact`).

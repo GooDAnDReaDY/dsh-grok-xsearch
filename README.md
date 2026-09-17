@@ -264,11 +264,11 @@ dsh plugin --profile web add @goodandready/dsh-grok-xsearch
 | Route | Method | Description |
 |---|---|---|
 | `/dsh-grok-xsearch/config` | `GET, PUT` | Inspects or updates search configuration and model selection |
-| `/dsh-grok-xsearch/cache/clear` | `POST` | Clears in-memory query cache |
+| `/dsh-grok-xsearch/cache/clear` | `POST` | Clears in-memory query cache and cached models catalog |
 | `/dsh-grok-xsearch/oauth/start` | `GET` | Initiates standalone SuperGrok OAuth PKCE flow |
 | `/dsh-grok-xsearch/oauth/callback` | `GET` | Handles browser OAuth redirect callback |
 | `/dsh-grok-xsearch/oauth/complete` | `POST` | Finalizes authentication from manual URL paste |
-| `/dsh-grok-xsearch/logout` | `POST` | Clears stored session tokens |
+| `/dsh-grok-xsearch/logout` | `POST` | Clears stored session tokens, pending OAuth requests, models cache, and refresh mutex |
 
 ---
 

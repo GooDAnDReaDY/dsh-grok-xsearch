@@ -229,7 +229,7 @@ dsh plugin --profile web add @goodandready/dsh-grok-xsearch
 | `/dsh-grok-xsearch/oauth/start` | `GET` | Старт сессии авторизации PKCE |
 | `/dsh-grok-xsearch/oauth/callback` | `GET` | Обработчик редиректа браузера |
 | `/dsh-grok-xsearch/oauth/complete` | `POST` | Завершение авторизации по вставленному URL |
-| `/dsh-grok-xsearch/logout` | `POST` | Выход и удаление токенов |
+| `/dsh-grok-xsearch/logout` | `POST` | Выход, сброс токенов, незавершённых запросов OAuth, мьютекса и кэша моделей |
 
 ---
 
@@ -238,6 +238,12 @@ dsh plugin --profile web add @goodandready/dsh-grok-xsearch
 MIT © [GooDAnDReaDY](https://github.com/GooDAnDReaDY)
 
 ## Совместимость и стабильность
+
+- **Версия 0.3.13 (Очистка состояния жизненного цикла и гигиена экспортов)**:
+  - **Диспозеры жизненного цикла Cordis**: `clearPendingStore`, `clearRefreshMutex` и `clearModelsCache` подключены к диспозеру эффекта плагина в `lib/index.js`, предотвращая накопление состояния между сессиями и перезапусками (#48).
+  - **Комплексный сброс при выходе**: Маршрут `/dsh-grok-xsearch/logout` гарантированно сбрасывает сохранённый токен, очередь незавершённых запросов OAuth PKCE, мьютекс обновления токена и кэш каталога моделей.
+  - **Очистка кэша моделей при ручном сбросе**: Маршрут `/dsh-grok-xsearch/cache/clear` сбрасывает не только кэш поисковых ответов, но и кэш моделей.
+  - **Гигиена экспортов**: Сняты избыточные модификаторы `export` у внутренних функций `sortModels`, `MODELS_CACHE_TTL_MS`, `PENDING_TTL_MS`, `loadPending`, `listPending`, `runtime`, `getUpdateStatus`, `installExact`.
 
 - **Версия 0.3.12 (Модуль автообновления, защита маршрутов и декомпозиция клиента)**:
   - **Модуль автообновления в один клик (`lib/updater.js`)**: Добавлен хостовый маршрут `/api/dsh-grok-xsearch/update` и UI-блок обновления в карточке настроек с проверкой версий, поддержкой пререлизов semver и обновлением без обхода карантина пакетов.
