@@ -212,6 +212,12 @@ dsh-grok-xsearch:
 
 ## Compatibility & Stability
 
+- **Version 0.3.13 (Lifecycle State Cleanup & Export Hygiene)**:
+  - **Cordis Lifecycle Disposers**: `clearPendingStore`, `clearRefreshMutex`, and `clearModelsCache` connected to the plugin effect disposer in `lib/index.js`, preventing memory retention and stale state across sessions and restarts (#48).
+  - **Comprehensive Logout Flush**: Route `/dsh-grok-xsearch/logout` guaranteed to flush stored tokens, pending OAuth PKCE requests, token refresh mutex, and the cached models catalog.
+  - **Manual Cache Clear Route**: Route `/dsh-grok-xsearch/cache/clear` flushes both query results cache and the models catalog cache.
+  - **Export Modifier Hygiene**: Stripped unneeded `export` keywords from internal-only functions and constants across `models.js`, `oauth-pending.js`, and `updater.js`.
+
 - **Version 0.3.12 (One-Click Updater, Route Security Hardening & Client Decomposition)**:
   - **One-Click Updater (`lib/updater.js`)**: Added host-side `/api/dsh-grok-xsearch/update` route and settings card update UI for version checking, update status inspection, and one-click upgrades with semver prerelease support and standard pnpm package resolution.
   - **Fail-Closed Route Security**: Upgraded write routes (`/config`, `/cache/clear`, `/oauth/complete`, `/logout`, `/api/dsh-grok-xsearch/update`) with strict loopback and origin/referer verification protecting against DNS rebinding and cross-site request forgery (CSRF).
@@ -264,11 +270,11 @@ dsh plugin --profile web add @goodandready/dsh-grok-xsearch
 | Route | Method | Description |
 |---|---|---|
 | `/dsh-grok-xsearch/config` | `GET, PUT` | Inspects or updates search configuration and model selection |
-| `/dsh-grok-xsearch/cache/clear` | `POST` | Clears in-memory query cache |
+| `/dsh-grok-xsearch/cache/clear` | `POST` | Clears in-memory query cache and cached models catalog |
 | `/dsh-grok-xsearch/oauth/start` | `GET` | Initiates standalone SuperGrok OAuth PKCE flow |
 | `/dsh-grok-xsearch/oauth/callback` | `GET` | Handles browser OAuth redirect callback |
 | `/dsh-grok-xsearch/oauth/complete` | `POST` | Finalizes authentication from manual URL paste |
-| `/dsh-grok-xsearch/logout` | `POST` | Clears stored session tokens |
+| `/dsh-grok-xsearch/logout` | `POST` | Clears stored session tokens, pending OAuth requests, models cache, and refresh mutex |
 
 ---
 

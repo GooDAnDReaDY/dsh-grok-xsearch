@@ -116,6 +116,12 @@ MIT © [GooDAnDReaDY](https://github.com/GooDAnDReaDY)
 
 ## 兼容性
 
+- **版本 0.3.13 (生命周期状态清理与导出精简)**:
+  - **Cordis 生命周期清理器**: 将 `clearPendingStore`、`clearRefreshMutex` 和 `clearModelsCache` 连接至 `lib/index.js` 的插件 effect 清理回调，杜绝会话与重启间的状态残留 (#48)。
+  - **退出登录全面清理**: `/dsh-grok-xsearch/logout` 路由确保同时清除凭据、未决 OAuth 请求、刷新互斥锁及模型列表缓存。
+  - **缓存清理同步清除模型**: `/dsh-grok-xsearch/cache/clear` 同时清理查询缓存与模型列表缓存。
+  - **导出关键字精简**: 移除仅在内部使用的模块函数的冗余 `export` 关键字。
+
 - **版本 0.3.12 (一键更新模块、路由安全增强与客户端精简)**:
   - **一键更新模块 (`lib/updater.js`)**: 新增主机端 `/api/dsh-grok-xsearch/update` 路由与设置卡片更新区块，支持版本检查、预发布版本识别及标准安装。
   - **Fail-Closed 严格路由防护**: 为写操作路由补充基于 loopback 与 origin/referer 的校验，防御 DNS 重新绑定与 CSRF 攻击。
