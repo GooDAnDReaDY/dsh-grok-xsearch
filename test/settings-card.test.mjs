@@ -83,10 +83,12 @@ test('в сборке без слота settings.plugin.item запасной р
 
   assert.equal(ctx.registered.some((r) => r.name === 'settings.section'), false,
     'раздел settings.section не должен регистрироваться (фолбэк убран)')
+  assert.equal(ctx.registered.some((r) => r.name === 'plugins.row.config'), false,
+    'посадка строки не должна регистрироваться, если слот не объявлен')
   assert.equal(ctx.registered.some((r) => r.name === 'settings.plugin.item'), false,
     'карточка не должна быть зарегистрирована, если слот не объявлен')
-  assert.ok(warnLogs.some((msg) => msg.includes('settings.plugin.item')),
-    'неудача размещения карточки должна логироваться через ctx.logger.warn')
+  assert.ok(warnLogs.some((msg) => msg.includes('plugins.row.config')),
+    'неудача размещения посадки строки должна логироваться через ctx.logger.warn')
 })
 
 test('клиент экспортирует inject с settingsScope для привязки снимка настроек', async () => {
