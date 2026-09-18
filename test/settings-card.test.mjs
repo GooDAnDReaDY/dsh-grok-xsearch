@@ -68,16 +68,25 @@ test('ключ карточки совпадает с пространством
   assert.equal(card.key, 'dsh-grok-xsearch')
 })
 
-test('в сборке без вкладки «Плагины» сразу срабатывает запасной раздел без ожидания таймера', async () => {
+test('в сборке без слота settings.plugin.item запасной раздел settings.section НЕ регистрируется и пишется warn (Issue #51)', async () => {
   const registration = await loadFactory()
   const exported = registration.factory(fakeRequire)
-  const ctx = fakeCtx({ declared: ['settings.section'] })
+  const warnLogs = []
+  const baseCtx = fakeCtx({ declared: ['settings.section'] })
+  const ctx = {
+    ...baseCtx,
+    logger: {
+      warn: (msg) => warnLogs.push(msg),
+    },
+  }
   exported.apply(ctx)
 
-  const section = ctx.registered.find((r) => r.name === 'settings.section')
-  assert.ok(section, 'должен сразу появиться запасной раздел')
-  assert.equal(section.id, '@goodandready/dsh-grok-xsearch')
-  assert.equal(ctx.registered.some((r) => r.name === 'settings.plugin.item'), false)
+  assert.equal(ctx.registered.some((r) => r.name === 'settings.section'), false,
+    'раздел settings.section не должен регистрироваться (фолбэк убран)')
+  assert.equal(ctx.registered.some((r) => r.name === 'settings.plugin.item'), false,
+    'карточка не должна быть зарегистрирована, если слот не объявлен')
+  assert.ok(warnLogs.some((msg) => msg.includes('settings.plugin.item')),
+    'неудача размещения карточки должна логироваться через ctx.logger.warn')
 })
 
 test('клиент экспортирует inject с settingsScope для привязки снимка настроек', async () => {
