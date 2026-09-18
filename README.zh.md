@@ -116,6 +116,10 @@ MIT © [GooDAnDReaDY](https://github.com/GooDAnDReaDY)
 
 ## 兼容性
 
+- **版本 0.3.14 (移除设置重复入口与卡片独占)**:
+  - **移除冗余 `settings.section` 回退**: 插件配置严格仅在 `Settings → 插件` 的折叠卡片 (`settings.plugin.item`) 中展示，彻底消除侧边栏根级重复项 (#51)。
+  - **插槽故障诊断日志**: 当 `settings.plugin.item` 插槽不可用时，通过 `ctx.logger.warn` 记录告警信息，不再使用次级根区域静默顶替。
+
 - **版本 0.3.13 (生命周期状态清理与导出精简)**:
   - **Cordis 生命周期清理器**: 将 `clearPendingStore`、`clearRefreshMutex` 和 `clearModelsCache` 连接至 `lib/index.js` 的插件 effect 清理回调，杜绝会话与重启间的状态残留 (#48)。
   - **退出登录全面清理**: `/dsh-grok-xsearch/logout` 路由确保同时清除凭据、未决 OAuth 请求、刷新互斥锁及模型列表缓存。

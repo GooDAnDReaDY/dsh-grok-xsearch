@@ -212,6 +212,10 @@ dsh-grok-xsearch:
 
 ## Compatibility & Stability
 
+- **Version 0.3.14 (Settings De-duplication & Plugin Card Exclusivity)**:
+  - **Removed Redundant `settings.section` Fallback**: Settings are surfaced exclusively within the collapsible card under `Settings → Plugins` (`settings.plugin.item`), removing duplicate root sidebar entries (#51).
+  - **Diagnostic Slot Logging**: Unavailability of `settings.plugin.item` slot now logs an actionable warning via `ctx.logger.warn` instead of masking errors with a redundant root section.
+
 - **Version 0.3.13 (Lifecycle State Cleanup & Export Hygiene)**:
   - **Cordis Lifecycle Disposers**: `clearPendingStore`, `clearRefreshMutex`, and `clearModelsCache` connected to the plugin effect disposer in `lib/index.js`, preventing memory retention and stale state across sessions and restarts (#48).
   - **Comprehensive Logout Flush**: Route `/dsh-grok-xsearch/logout` guaranteed to flush stored tokens, pending OAuth PKCE requests, token refresh mutex, and the cached models catalog.

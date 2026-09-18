@@ -102,3 +102,6 @@
   - Подключены функции сброса состояния (`clearPendingStore`, `clearRefreshMutex`, `clearModelsCache`) в диспозер эффекта жизненного цикла плагина (`ctx.effect`) и в обработчики маршрутов `/logout` и `/cache/clear` (#48).
   - Проверено и подтверждено поведение сброса мьютекса обновления токена в блоке `finally` (`refreshInFlight = null`).
   - Устранены избыточные модификаторы `export` у внутренних функций и констант (`sortModels`, `MODELS_CACHE_TTL_MS`, `PENDING_TTL_MS`, `loadPending`, `listPending`, `runtime`, `getUpdateStatus`, `installExact`).
+- **2026-09-18 (Issue #51 Removal of settings.section fallback)**:
+  - Убран устаревший запасной слот `settings.section` и хелпер `registerSlotWhenReady` в `lib/client.js`. Настройки плагина регистрируются строго в одной точке входа — карточке `settings.plugin.item` в соответствии со стандартом семейства плагинов (`dsh-key-limits`, `dsh-vision-bridge`) (#51).
+  - При недоступности слота `settings.plugin.item` выполняется явное логирование диагностического предупреждения через `ctx.logger.warn`.
