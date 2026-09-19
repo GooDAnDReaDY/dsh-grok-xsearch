@@ -2,6 +2,19 @@
 
 Notable changes to `@goodandready/dsh-grok-xsearch`.
 
+## 0.3.16
+
+### Fixed
+- **The plugin page shows the configure control again** (#55). DSH core
+  0.1.6-alpha.2 renders a plugin's settings on its own page only for rows seated
+  in `plugins.item`, so a `plugins.row.config`-only seat left the settings
+  unreachable. The card is now registered into `plugins.item` with
+  `id: 'dsh-grok-xsearch'` (the row id from `cordis.patch.yml`), `order: 60` and a
+  static `label`, and it is view-aware: `view: 'summary'` renders the one-line
+  state, `view: 'page'` the open form without our card header (class `gx-page`).
+  The `plugins.row.config` and legacy `settings.plugin.item` seats stay registered;
+  `settings.section` remains absent.
+
 ## 0.3.15
 
 ### Fixed
