@@ -34,7 +34,7 @@ function fakeCtx({ declared }) {
         return false
       },
       register(options, component) {
-        registered.push({ name: options.name, key: options.key, id: options.id, component })
+        registered.push({ name: options.name, key: options.key, id: options.id, order: options.order, label: options.label, component })
         return () => {}
       },
     },
@@ -49,13 +49,29 @@ function fakeCtx({ declared }) {
 test('настройки регистрируются карточкой, а не разделом в боковом списке', async () => {
   const registration = await loadFactory()
   const exported = registration.factory(fakeRequire)
-  const ctx = fakeCtx({ declared: ['settings.plugin.item'] })
+  const ctx = fakeCtx({ declared: ['plugins.row.config', 'plugins.item', 'settings.plugin.item'] })
   exported.apply(ctx)
 
   const card = ctx.registered.find((r) => r.name === 'settings.plugin.item')
   assert.ok(card, 'карточка должна быть зарегистрирована')
   assert.equal(ctx.registered.some((r) => r.name === 'settings.section'), false,
     'строки в боковом списке быть не должно')
+})
+
+test('посадка в plugins.item стоит на строке плагина с якорного id и статичным label (0.1.6-alpha.2)', async () => {
+  const registration = await loadFactory()
+  const exported = registration.factory(fakeRequire)
+  const ctx = fakeCtx({ declared: ['plugins.row.config', 'plugins.item', 'settings.plugin.item'] })
+  exported.apply(ctx)
+
+  const item = ctx.registered.find((r) => r.name === 'plugins.item')
+  assert.ok(item, 'посадка в plugins.item обязана быть зарегистрирована — иначе страница плагина не покажет настройки')
+  assert.equal(item.id, 'dsh-grok-xsearch', 'id посадки обязан совпадать с row id из cordis.patch.yml')
+  assert.equal(item.order, 60, 'порядок посадки — 60')
+  assert.equal(typeof item.label, 'function', 'label обязан быть функцией-геттером')
+  assert.equal(item.label(), 'Grok X Search & Intelligence Suite', 'label обязан возвращать статичную строку')
+  const rowSeat = ctx.registered.find((r) => r.name === 'plugins.row.config')
+  assert.ok(rowSeat, 'посадка plugins.row.config обязана сохраниться')
 })
 
 test('ключ карточки совпадает с пространством настроек', async () => {
