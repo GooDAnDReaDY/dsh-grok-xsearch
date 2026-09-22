@@ -2,6 +2,11 @@
 
 Notable changes to `@goodandready/dsh-grok-xsearch`.
 
+## 0.3.17
+
+### Fixed
+- Settings no longer wait on the removed settingsScope service. The client uses configForms (#63).
+
 ## 0.3.16
 
 ### Fixed
