@@ -2,6 +2,18 @@
 
 Notable changes to `@goodandready/dsh-grok-xsearch`.
 
+## 0.3.18
+
+### Performance
+- **Debounced atomic async disk cache persistence** (#59). Replaced synchronous `writeFileSync` in `lib/xsearch.js` with debounced atomic asynchronous writes (`.tmp` + `rename`), preventing Node.js event loop blocking during search execution and avoiding JSON corruption on sudden shutdown.
+
+### Fixed
+- **Reactive tool registration on configuration change** (#60). Added `syncTools()` call to `scope.watch` in `lib/index.js`, ensuring agent tools are immediately unregistered when disabled in settings and reconfigured when timeouts or parameters change.
+- **Fallback version alignment** (#62). Updated obsolete version fallbacks in `lib/xsearch.js` and `lib/client.js` to match current release.
+
+### Refactored
+- **Client code size reduction** (#61). Compacted repetitive CSS and helper markup in `lib/client.js`, reducing file length from 610 to 577 lines (< 580) to comply with DSH authoring guidelines.
+
 ## 0.3.17
 
 ### Fixed
