@@ -2,6 +2,15 @@
 
 Notable changes to `@goodandready/dsh-grok-xsearch`.
 
+## 0.3.19
+
+### Security
+- **Fail-closed route security & protected GET config** (#42). Enforced fail-closed origin, `Sec-Fetch-Site` and loopback host verification in `isTrustedSettingsRequest()`. Moved trust checks to protect both GET and PUT on `/dsh-grok-xsearch/config`, shielding account credentials and status against cross-site callers.
+- **Search cache account isolation & restricted disk file mode** (#66). Scoped search cache keys by SHA-256 account fingerprint derived from `accessToken` or explicit `account_fingerprint`, completely preventing cross-account result leakage. Scoped disk cache to `DSH_PROFILE`, enforced `0600` file mode on atomic writes, and hooked `clearXSearchCache()` into tools disposer and `/logout`.
+
+### Fixed
+- **Settings fallback without settingsApi** (#25). Decoupled `settings` from hard-required service inject list and removed 503 error on `PUT /dsh-grok-xsearch/config`. When running on DSH 0.1.7 without a separate settings service, config updates now gracefully apply in-memory and trigger `syncTools()`.
+
 ## 0.3.18
 
 ### Performance
