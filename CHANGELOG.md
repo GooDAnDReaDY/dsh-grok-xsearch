@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.24
+
+### Fixed
+- **OAuth token manager imports (#73)**: Explicitly imported `saveBlob` and `clearBlob` in `lib/index.js` from `./token-manager.js`, resolving a critical `ReferenceError: saveBlob is not defined` during OAuth callback/completion and logout.
+- **Robust payload handling on OAuth complete (#74)**: Guarded JSON body parsing in `/oauth/complete` against `null` and non-object inputs (`payload = payload && typeof payload === 'object' ? payload : {}`), preventing unhandled `TypeError` exceptions and hung client connections.
+- **Fail-closed origin shielding for OAuth endpoints (#77)**: Guarded `/oauth/start` and `/oauth/callback` routes with `isTrustedSettingsRequest(req)` to prevent cross-site initiation and unauthorized OAuth credential linking.
+
 ## 0.3.23
 
 ### Fixed
