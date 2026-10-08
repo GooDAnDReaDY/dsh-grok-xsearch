@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.26
+
+- **Fix (Runtime / Token Refresh)**: Updated getAccessToken in tool synchronization closure to propagate force refresh parameter into accessToken handler, enabling correct execution of tool-level onUnauthorized fallback hooks (#76).
+- **Chore (Cleanup)**: Removed unused credentialRef, parseBlob, and serializeBlob imports, and deleted redundant plainVolatile helper in lib/index.js (#75).
+
 ## 0.3.25
 
 - **Fix (UI / CSS Tokens)**: Replaced non-canonical tokens (--dsw-color-brand-*, --dsw-color-error-*, --dsw-color-success-*, --dsw-color-warning-*) with standard DeepSeek Harness design tokens (--dsw-alias-brand-primary, --dsw-alias-state-error-*, --dsw-alias-state-success-*, --dsw-alias-state-warn-*); fixed broken multi-line var() syntax for secondary and primary labels (#78).
