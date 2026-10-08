@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.25
+
+- **Fix (UI / CSS Tokens)**: Replaced non-canonical tokens (--dsw-color-brand-*, --dsw-color-error-*, --dsw-color-success-*, --dsw-color-warning-*) with standard DeepSeek Harness design tokens (--dsw-alias-brand-primary, --dsw-alias-state-error-*, --dsw-alias-state-success-*, --dsw-alias-state-warn-*); fixed broken multi-line var() syntax for secondary and primary labels (#78).
+- **Fix (UI / Snapshot Sync)**: Corrected ConfigForm reactive snapshot reader in client.js to safely read snap.value when snap.status !== 'unavailable' matching DSH snapshot contract instead of non-existent snap.values property (#79).
+
 ## 0.3.24
 
 ### Fixed
