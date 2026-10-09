@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.27
+
+- **Fix (Desktop / Security Headers)**: In `isTrustedSettingsRequest`, restrict strict host matching only to web `http:`/`https:` referer schemes, allowing internal Electron application schemes (such as `dsh-app://app/` in DSH Desktop) on loopback remote addresses without falsely returning HTTP 403 on `/config`, `/logout`, and `/oauth/complete` (#83).
+
 ## 0.3.26
 
 - **Fix (Runtime / Token Refresh)**: Updated getAccessToken in tool synchronization closure to propagate force refresh parameter into accessToken handler, enabling correct execution of tool-level onUnauthorized fallback hooks (#76).
