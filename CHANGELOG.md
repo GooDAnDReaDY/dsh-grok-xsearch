@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.29
+
+- **Fix (Security / HTTP Validation)**: Added trusted address and LAN validation (`isTrustedAddress`, `isTrustedHostOrHostname`) to `isTrustedSettingsRequest`; prevented requests with empty headers from remote addresses from being trusted; rejected requests where `Origin.host === Host` on arbitrary external domains (#88).
+
 ## 0.3.28
 
 - **Fix (UI / Design Tokens)**: Replaced non-canonical tokens (`--dsw-alias-state-error-bg`, `--dsw-alias-state-success-bg`, `--dsw-alias-state-warn-bg`) in `lib/client.js` with canonical `color-mix()` compositions based on standard DSH core tokens (`--dsw-alias-state-*-primary` and `--dsw-alias-brand-primary-invert`); added strict guard test validating 100% adherence to canonical 107 DSH tokens (#86).
