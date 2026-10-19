@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.30
+
+- **Fix (Security / Guard & Token Leakage Protection)**: Enforced strict core `ctx.connection.requestRejection(req)` authentication gating across all settings routes (`/config`, `/cache/clear`, `/oauth/start`, `/oauth/callback`, `/oauth/complete`, `/logout`); fail-closed validation of unknown `remoteAddress`; restricted `baseUrl` to official xAI endpoints (`api.x.ai`) and loopback, preventing SSRF and Grok access token leakage to untrusted hosts in `listModelsForSettings` and `runXSearch`; rejected untrusted `baseUrl` in `PUT /config` with HTTP 400 validation error (#90).
+
 ## 0.3.29
 
 - **Fix (Security / HTTP Validation)**: Added trusted address and LAN validation (`isTrustedAddress`, `isTrustedHostOrHostname`) to `isTrustedSettingsRequest`; prevented requests with empty headers from remote addresses from being trusted; rejected requests where `Origin.host === Host` on arbitrary external domains (#88).
