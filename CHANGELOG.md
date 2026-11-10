@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.31
+
+- **Fix (Test / Cache Isolation)**: Implemented dynamic `getDiskCachePath()` and isolated temporary directory allocation (`mkdtempSync`) in tests; ensured `flushDiskCache()` awaits active write promises to eliminate parallel test race conditions (#92).
+- **Security (Dependencies / Lockfile)**: Updated `package-lock.json` via `npm audit fix` upgrading `zod` (4.6.5 -> 4.6.7) and `fast-uri` (3.1.8 -> 3.1.9) to eliminate high and moderate severity transitive advisories in local builds (#93).
+
 ## 0.3.30
 
 - **Fix (Security / Guard & Token Leakage Protection)**: Enforced strict core `ctx.connection.requestRejection(req)` authentication gating across all settings routes (`/config`, `/cache/clear`, `/oauth/start`, `/oauth/callback`, `/oauth/complete`, `/logout`); fail-closed validation of unknown `remoteAddress`; restricted `baseUrl` to official xAI endpoints (`api.x.ai`) and loopback, preventing SSRF and Grok access token leakage to untrusted hosts in `listModelsForSettings` and `runXSearch`; rejected untrusted `baseUrl` in `PUT /config` with HTTP 400 validation error (#90).
