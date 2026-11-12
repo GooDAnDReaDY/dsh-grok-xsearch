@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.32
+
+- **Docs (Project Documentation & Deployment Standard)**: Restored canonical `index.md` (project map, module roles, entrypoints, companion tools, and test matrix), restored `AGENTS.md` per `PROJECT-AGENTS-TEMPLATE.md`, created executable canonical `deploy.sh` with 4-place identity verification and `--install` mode, updated `.gitignore` and `.gitattributes` to keep developer tooling safely contained in Gitea repository while using `export-ignore` and sanitized mirror publish scripts to prevent leakage to public npm and GitHub mirrors, and removed non-packaged `docs/design/DESIGN.md` references from public README files (#95).
+- **Fix (Runtime / Cache Lifecycle & Preflight Compliance)**: Connected `flushDiskCache()` to plugin lifecycle disposal (`ctx.effect` cleanup return and `ctx.on('dispose')`) ensuring pending debounced cache timer entries persist to disk upon plugin stop or reload; pruned unused dead export `DISK_CACHE_PATH` from `lib/xsearch.js`; eliminated empty catches in `scheduleSaveDiskCache` and `clearBlob` to satisfy strict DSH plugin preflight; added unit test suite `test/lifecycle-cache-flush.test.mjs` verifying cache persistence and zero dead exports (#96).
+
 ## 0.3.31
 
 - **Fix (Test / Cache Isolation)**: Implemented dynamic `getDiskCachePath()` and isolated temporary directory allocation (`mkdtempSync`) in tests; ensured `flushDiskCache()` awaits active write promises to eliminate parallel test race conditions (#92).

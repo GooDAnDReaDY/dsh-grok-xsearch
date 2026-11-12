@@ -1,6 +1,6 @@
 {
   "name": "@goodandready/dsh-grok-xsearch",
-  "version": "0.3.31",
+  "version": "0.3.32",
   "description": "Real-time X (Twitter) search, author profiling, trends, and fact-checking tool suite powered by SuperGrok OAuth for DeepSeek Harness.",
   "license": "MIT",
   "type": "module",
@@ -36,7 +36,8 @@
     "url": "https://github.com/GooDAnDReaDY/dsh-grok-xsearch/issues"
   },
   "scripts": {
-    "test": "node --test test/*.test.mjs"
+    "test": "node --test test/*.test.mjs",
+    "check": "node --check lib/*.js"
   },
   "dsh": {
     "bundle": {
