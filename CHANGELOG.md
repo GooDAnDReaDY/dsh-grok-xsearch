@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.33
+
+- **Fix (Credentials / Windows & DSH 0.2.2 Compatibility)**: Fixed `credentialRef()` in `lib/token-manager.js` to return a plain `CredentialRef` string (`GROK_XSEARCH_OAUTH_1`) matching `@deepseek-ai/dsh-credentials` contract instead of an object `{ type: 'oauth', id }`, resolving synchronous `TypeError: name.toUpperCase is not a function` crashes on Windows 11 / DSH Desktop `0.2.2-alpha.3` and silent lookup misses on POSIX across `loadBlob()`, `saveBlob()`, and `clearBlob()`; guarded `loadBlob()` with `try/catch` against synchronous provider exceptions (#98, external GitHub #1).
+- **Chore (Compatibility)**: Widened `@deepseek-ai/dsh-*` `peerDependencies` ranges in `package.json` to `^0.1.7-rc.2 || ^0.2.0-rc.1 || ^0.2.2-alpha.1` so DSH Desktop `0.2.2-alpha.3` and `0.2.2-rc.*` satisfy semver cleanly (#98).
+
 ## 0.3.32
 
 - **Docs (Project Documentation & Deployment Standard)**: Restored canonical `index.md` (project map, module roles, entrypoints, companion tools, and test matrix), restored `AGENTS.md` per `PROJECT-AGENTS-TEMPLATE.md`, created executable canonical `deploy.sh` with 4-place identity verification and `--install` mode, updated `.gitignore` and `.gitattributes` to keep developer tooling safely contained in Gitea repository while using `export-ignore` and sanitized mirror publish scripts to prevent leakage to public npm and GitHub mirrors, and removed non-packaged `docs/design/DESIGN.md` references from public README files (#95).
