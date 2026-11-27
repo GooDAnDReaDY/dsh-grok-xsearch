@@ -17,8 +17,8 @@
 
 <p align="center">
   <a href="README.md"><b>🇬🇧 English</b></a> •
-  <a href="README.ru.md"><b>🇷🇺 Русский</b></a> •
-  <a href="README.zh.md"><b>🇨🇳 中文说明</b></a>
+  <a href="README.zh.md"><b>🇨🇳 中文说明</b></a> •
+  <a href="README.ru.md"><b>🇷🇺 Русский</b></a>
 </p>
 
 <table align="center">
@@ -37,40 +37,40 @@
 
 ## ⚡ Overview
 
-**`dsh-grok-xsearch`** equips your **DeepSeek Harness** agents with real-time X (Twitter) intelligence and a suite of dedicated analytical tools. 
+**`dsh-grok-xsearch`** equips **DeepSeek Harness** agents with real-time X (Twitter) search, thread reconstruction, author profiling, trend discovery, and Community Notes verification.
 
-By leveraging authenticated SuperGrok OAuth sessions with the xAI Responses API (`POST /responses`), agents can query live breaking news, developer sentiment, community threads, author timelines, viral trends, and Community Notes fact-checking without expensive per-query X API tiers.
+By routing queries through an authenticated **SuperGrok OAuth** session to the official xAI Responses API (`POST /responses` with built-in `x_search`), agents gain live X intelligence without purchasing separate per-query X (Twitter) Enterprise/Pro API tiers (using your xAI SuperGrok subscription or xAI API credits instead).
 
 ```mermaid
 graph LR
-    subgraph AgentAction [DSH Agent Reasoning]
-        Agent[🤖 Agent: Live X Context Required] --> Select{Tool Selector}
-        Select --> T1[x_search: Deep Search]
-        Select --> T2[x_author_profile: Stance & Timeline]
-        Select --> T3[x_trending_topics: Live Trends]
-        Select --> T4[x_fact_check_notes: Community Notes]
-        Select --> T5[x_thread_reader: Thread Context]
-        Select --> T6[x_find_experts: Expert Discovery]
+    subgraph AgentAction ["DSH Agent Reasoning"]
+        Agent["🤖 Agent: Live X Context Required"] --> Select{"Tool Selector"}
+        Select --> T1["x_search: Deep Search"]
+        Select --> T2["x_author_profile: Stance & Timeline"]
+        Select --> T3["x_trending_topics: Live Trends"]
+        Select --> T4["x_fact_check_notes: Community Notes"]
+        Select --> T5["x_thread_reader: Thread Context"]
+        Select --> T6["x_find_experts: Expert Discovery"]
     end
 
-    subgraph SearchEngine [dsh-grok-xsearch Execution Engine]
-        T1 & T2 & T3 & T4 --> Cache{In-Memory TTL Cache}
-        Cache -->|Hit| DirectReturn[Cached Result: Instant]
-        Cache -->|Miss| Filter[Filter & Multimodal Normalizer]
-        Filter --> Auth{SuperGrok PKCE OAuth}
+    subgraph SearchEngine ["dsh-grok-xsearch Execution Engine"]
+        T1 & T2 & T3 & T4 & T5 & T6 --> Cache{"Memory + Disk TTL Cache"}
+        Cache -->|Hit| DirectReturn["Cached Result: Instant"]
+        Cache -->|Miss| Filter["Filter & Multimodal Normalizer"]
+        Filter --> Auth{"SuperGrok PKCE OAuth"}
     end
 
-    subgraph UpstreamX [xAI Responses API]
-        Auth --> xAI[xAI Responses Endpoint: tool type x_search]
-        xAI -->|Rate Limit 429| Fallback[Smart Fallback: Grok 4.5]
+    subgraph UpstreamX ["xAI Responses API"]
+        Auth --> xAI["POST /responses (tool: x_search)"]
+        xAI -->|HTTP 429| Fallback["Smart Model Fallback"]
         Fallback --> xAI
-        xAI --> Raw[Live Posts, Metrics & Annotations]
+        xAI --> Raw["Live Posts, Metrics & Annotations"]
     end
 
-    subgraph ContextAssembly [Rich Formatting & Deduplication]
-        Raw --> Dedup[Citation Deduplication & Tweet Parsing]
-        Dedup --> CacheSave[Save Cache: 5 min TTL]
-        CacheSave --> Output[Structured Output & Clickable Citations]
+    subgraph ContextAssembly ["Formatting & Persistence"]
+        Raw --> Dedup["Citation Canonicalization & Dedup"]
+        Dedup --> CacheSave["Atomic 0600 Disk + LRU Cache"]
+        CacheSave --> Output["Structured Markdown & Citations"]
         Output --> Agent
     end
 
@@ -82,106 +82,113 @@ graph LR
 
 ---
 
+## 🔑 Prerequisites
+
+> [!IMPORTANT]
+> Before connecting an account, make sure both requirements below are satisfied:
+
+1. **xAI Account with SuperGrok or xAI API Credits**
+   - The plugin calls `https://api.x.ai/v1/responses`, which requires an xAI account backed by an active **SuperGrok** subscription or **xAI API credits**.
+   - **X Premium alone is not sufficient** — X Premium only grants Grok access inside `x.com`. With an X Premium-only account, OAuth sign-in succeeds and stores credentials, but every tool call is rejected upstream with:
+     `You have run out of credits or need a Grok subscription.`
+2. **OAuth Client ID (`grokClientId`) Matching the Callback Redirect URI**
+   - You must supply an OAuth Client ID authorized for PKCE (`S256`) whose registered redirect URI covers `http://127.0.0.1:56121/callback` (or the custom `redirectUri` configured in **Advanced Settings**).
+   - If the browser runs on another machine or does not redirect back automatically after sign-in, click **"Browser did not return here? Paste the redirected URL"** in the plugin settings card and submit the full callback URL from your browser's address bar.
+
+---
+
 ## 🛠️ Complete Tool Suite Reference
 
-The plugin registers six purpose-built tools in `ctx.tools`:
+The plugin registers **six** strict JSON-Schema tools in `ctx.tools`:
 
 ### 1. `x_search` — Deep Post & Thread Search
 
-General-purpose natural language search across X posts, threads, media, and engagement metrics.
+General-purpose natural-language search across X posts, threads, media, and engagement metrics.
 
 | Parameter | Type | Required | Description |
 |---|---|---|---|
-| `query` | `string` | **Yes** | Natural language search query or topic keywords |
-| `allowed_x_handles` | `string` | No | Comma-separated `@handles` to include (up to 10) |
+| `query` | `string` | **Yes** | Natural-language search query or topic keywords |
+| `allowed_x_handles` | `string` | No | Comma-separated `@handles` to include (up to 10; mutually exclusive with `excluded_x_handles`) |
 | `excluded_x_handles` | `string` | No | Comma-separated `@handles` to exclude (up to 10) |
-| `from_date` | `string` | No | Start date filter (`YYYY-MM-DD`) |
+| `from_date` | `string` | No | Start date filter (`YYYY-MM-DD`, validated against future/inverted ranges) |
 | `to_date` | `string` | No | End date filter (`YYYY-MM-DD`) |
-| `only_original_posts` | `boolean` | No | Omit retweets and quote echoes |
-| `has_media` | `boolean` | No | Filter for posts containing images, infographics, or videos |
+| `only_original_posts` | `boolean` | No | Omit retweets and pure quote echoes |
+| `has_media` | `boolean` | No | Filter for posts containing images, infographics, charts, or videos |
 | `has_links` | `boolean` | No | Filter for posts containing external links, papers, or repositories |
 | `only_threads` | `boolean` | No | Filter for extended multi-tweet discussion threads |
-| `lang` | `string` | No | Language code filter (e.g. `en`, `ru`, `ja`) |
-| `min_likes` | `number` | No | Minimum likes threshold for quality filtering |
+| `lang` | `string` | No | Language code filter (e.g. `en`, `zh`, `ru`, `ja`) |
+| `min_likes` | `number` | No | Minimum likes threshold for signal filtering |
 | `min_reposts` | `number` | No | Minimum reposts/retweets threshold |
-| `enable_image_understanding` | `boolean` | No | Let xAI inspect and extract data from images and charts |
-| `enable_video_understanding` | `boolean` | No | Let xAI analyze video clips and speech |
-| `extract_tables` | `boolean` | No | Extract benchmarks, financial metrics, or comparison tables into Markdown format |
+| `enable_image_understanding` | `boolean` | No | Analyze and extract text/metrics from attached post images and charts |
+| `enable_video_understanding` | `boolean` | No | Summarize statements, timestamps, and quotes from attached videos |
+| `extract_tables` | `boolean` | No | Automatically enables image understanding and formats numerical benchmarks/charts into Markdown tables |
 
 ---
 
 ### 2. `x_author_profile` — Author Timeline & Position Analysis
 
-Inspects an expert or developer's recent discussions, technical stances, and shared insights on X.
-
 | Parameter | Type | Required | Description |
 |---|---|---|---|
-| `handle` | `string` | **Yes** | Author's username (e.g., `@ylecun` or `sama`) |
+| `handle` | `string` | **Yes** | Author's username (e.g. `@ylecun` or `sama`) |
 | `focus_topic` | `string` | No | Specific topic or thesis to analyze the author's stance on |
 | `from_date` | `string` | No | Start date filter (`YYYY-MM-DD`) |
 | `to_date` | `string` | No | End date filter (`YYYY-MM-DD`) |
-| `only_original_posts` | `boolean` | No | Focus on original author posts (default `true`) |
+| `only_original_posts` | `boolean` | No | Focus on original author posts (default: `true`) |
 
 ---
 
 ### 3. `x_trending_topics` — Real-Time Trend Discovery
 
-Uncovers emerging topics, breaking announcements, viral threads, and community discussions.
-
 | Parameter | Type | Required | Description |
 |---|---|---|---|
-| `domain` | `string` | No | Topic domain (`tech`, `ai`, `crypto`, `science`, `world`, `general`, default: `tech`) |
-| `region` | `string` | No | Geographic or community focus (`Global`, `US`, `EU`, `Asia`) |
+| `domain` | `string` | No | Topic domain (`tech`, `ai`, `crypto`, `science`, `finance`, default: `tech`) |
+| `region` | `string` | No | Geographic focus (`Global`, `US`, `Europe`, `Asia`, default: `Global`) |
 | `timeframe` | `string` | No | Period (`today`, `past_24h`, `past_week`, default: `today`) |
-| `min_likes` | `number` | No | Minimum likes threshold for viral post detection |
+| `min_likes` | `number` | No | Minimum likes threshold for viral post detection (default: `20`) |
 
 ---
 
 ### 4. `x_fact_check_notes` — Community Notes & Fact-Checking
-
-Investigates claims, viral rumors, or news stories for Community Notes, expert rebuttals, and corrections on X.
 
 | Parameter | Type | Required | Description |
 |---|---|---|---|
 | `claim` | `string` | **Yes** | Statement or rumor to fact-check |
 | `target_url` | `string` | No | Specific X post or article URL to verify |
 | `allowed_x_handles` | `string` | No | Comma-separated researcher or institutional handles to check |
-| `enable_image_understanding` | `boolean` | No | Inspect attached images or infographics in debunking posts |
+| `enable_image_understanding` | `boolean` | No | Inspect attached images or infographics in fact-checking posts |
 
 ---
 
 ### 5. `x_thread_reader` — Thread Reconstruction & Discussion Reader
 
-Reconstructs full multi-tweet threads, author continuations, and high-engagement discussion trees by tweet URL or numeric status ID.
-
 | Parameter | Type | Required | Description |
 |---|---|---|---|
-| `tweet_url_or_id` | `string` | **Yes** | Tweet URL (e.g. `https://x.com/username/status/1234567890`) or numeric tweet ID |
+| `tweet_url_or_id` | `string` | **Yes** | Tweet URL (`https://x.com/username/status/1234567890`) or numeric tweet ID |
 | `include_replies` | `boolean` | No | Include notable community replies and expert rebuttals (default: `true`) |
-| `max_depth` | `number` | No | Maximum thread depth to retrieve (default: `10`, max: `25`) |
+| `max_depth` | `number` | No | Maximum thread depth to retrieve (default: `10`, clamped to `1–25`) |
 | `extract_tables` | `boolean` | No | Format benchmarks, charts, and metrics from thread media into Markdown tables |
 
 ---
 
 ### 6. `x_find_experts` — Domain Expert & Key Opinion Leader Discovery
 
-Discovers verified practitioners, seminal researchers, and high-signal domain contributors on X by topic or technology.
-
 | Parameter | Type | Required | Description |
 |---|---|---|---|
-| `domain_or_topic` | `string` | **Yes** | Domain, research field, technology, or topic (e.g. `quantum computing`, `distributed LLM training`) |
+| `domain_or_topic` | `string` | **Yes** | Domain, research field, technology, or topic (e.g. `Rust async`, `distributed LLM training`) |
 | `min_followers` | `number` | No | Optional minimum followers threshold |
 | `language` | `string` | No | Language focus code (e.g. `en`, `zh`) |
-| `limit` | `number` | No | Number of expert profiles to return (default: `5`, max: `15`) |
+| `limit` | `number` | No | Number of expert profiles to return (default: `5`, clamped to `1–15`) |
 
 ---
 
-## 🛡️ Resilience & Performance Features
+## 🛡️ Architecture, Resilience & Security
 
-* **Smart Model Fallback (429 Rate Limit)**: When `grok-4.6` encounters temporary upstream rate limits (HTTP 429), the execution engine automatically falls back to `grok-4.5` or `grok-4-fast-reasoning`, ensuring uninterrupted agent workflow.
-* **In-Memory TTL Caching**: Identical queries within a 5-minute window are served instantly from the local cache, conserving xAI API quotas.
-* **Citation Deduplication & Parsing**: Citations are parsed into structured references with author handles (`@handle`), status IDs, and clickable URLs.
-* **Full Multi-Language UI**: Settings card supports English, Russian, and Chinese localization via `ctx.locale.register`.
+* **Credential Seam & Single-Flight OAuth Refresh (`lib/token-manager.js`, `lib/grok-oauth.js`)**: OAuth tokens are stored exclusively in DSH `ctx.credentials` under plain `CredentialRef` `GROK_XSEARCH_OAUTH_1` (never in plain settings). Concurrent refresh triggers share a single in-flight promise, `HTTP 401` responses trigger automatic single-retry token recovery (even when `retries` is `0`), and fatal `invalid_grant` responses evict broken credentials automatically.
+* **Smart Rate-Limit Fallback & Backoff (`lib/xsearch.js`)**: On `HTTP 429`, queries automatically fall back across compatible Grok reasoning models; transient network and `5xx` errors retry with bounded exponential backoff.
+* **Account-Isolated Memory & `0600` Disk Cache (`lib/xsearch.js`)**: Recent responses are cached per account fingerprint (SHA-256 of access token) in a bounded 200-entry LRU map backed by atomic profile-scoped disk persistence (`0600` permissions) flushed cleanly on plugin reload/shutdown.
+* **Citation Canonicalization**: Normalizes `twitter.com` links to `https://x.com/<handle>/status/<id>`, strips tracking parameters (`s`, `t`, `ref_src`, `utm_*`), and deduplicates inline and top-level citations.
+* **Fail-Closed Route & SSRF Protection (`lib/http.js`, `lib/updater.js`)**: All settings and OAuth routes enforce `ctx.connection.requestRejection` plus same-origin/loopback verification. `baseUrl` is strictly restricted to `https://api.x.ai` (or local loopback for testing), preventing bearer token leakage to untrusted hosts.
+* **Native Multi-Language Settings Card & One-Click Updater (`lib/client.js`, `lib/updater.js`)**: Mounted on DSH plugin seats (`plugins.row.config` and `plugins.item`) with canonical `--dsw-alias-*` theme tokens, `ErrorBoundary` isolation, live cache hit-rate meter, one-click npm updater, built-in English (`en`) and Chinese (`zh`) locales, and runtime Russian translation support via `@goodandready/dsh-russian-lang`.
 
 ---
 
@@ -191,6 +198,8 @@ Discovers verified practitioners, seminal researchers, and high-signal domain co
 dsh-grok-xsearch:
   enabled: true
   grokClientId: "<YOUR_GROK_OAUTH_CLIENT_ID>"
+  redirectUri: "http://127.0.0.1:56121/callback"
+  baseUrl: "https://api.x.ai/v1"
   model: "grok-4.6"
   timeoutSeconds: 180
   retries: 2
@@ -201,62 +210,18 @@ dsh-grok-xsearch:
 
 | Parameter | Type | Default | Description |
 |---|---|---|---|
-| `enabled` | `boolean` | `true` | Enables or disables all Grok X tools |
-| `grokClientId` | `string` | `""` | OAuth Client ID for SuperGrok authentication |
-| `model` | `string` | `"grok-4.6"` | Default Grok model for Responses queries |
-| `timeoutSeconds` | `number` | `180` | Request timeout before cancellation |
-| `retries` | `number` | `2` | Number of retry attempts on transient 5xx errors |
-| `autoFallbackModel` | `boolean` | `true` | Automatically try Grok 4.5 upon HTTP 429 rate limit |
-| `enableCache` | `boolean` | `true` | In-memory cache for recent search queries |
-| `cacheTtlSeconds` | `number` | `300` | Cache retention time in seconds |
+| `enabled` | `boolean` | `true` | Enables or disables registration of all six Grok X tools |
+| `grokClientId` | `string` | `""` | OAuth Client ID for PKCE sign-in (must allow `redirectUri`) |
+| `redirectUri` | `string` | `"http://127.0.0.1:56121/callback"` | Local OAuth PKCE callback URL |
+| `baseUrl` | `string` | `"https://api.x.ai/v1"` | Upstream xAI API root (`https://api.x.ai` or local loopback only) |
+| `model` | `string` | `"grok-4.6"` | Default xAI model for Responses queries |
+| `timeoutSeconds` | `number` | `180` | Request timeout in seconds (`5–900`) |
+| `retries` | `number` | `2` | Retry attempts on transient network / `5xx` errors (`0–10`) |
+| `autoFallbackModel` | `boolean` | `true` | Automatically switch to fallback models on `HTTP 429` |
+| `enableCache` | `boolean` | `true` | Enable account-isolated memory + disk response cache |
+| `cacheTtlSeconds` | `number` | `300` | Cache retention TTL in seconds (`10–86400`) |
 
-## Compatibility & Stability
-
-- **Version 0.3.14 (Settings De-duplication & Plugin Card Exclusivity)**:
-  - **Removed Redundant `settings.section` Fallback**: Settings are surfaced exclusively within the collapsible card under `Settings → Plugins` (`settings.plugin.item`), removing duplicate root sidebar entries (#51).
-  - **Diagnostic Slot Logging**: Unavailability of `settings.plugin.item` slot now logs an actionable warning via `ctx.logger.warn` instead of masking errors with a redundant root section.
-
-- **Version 0.3.13 (Lifecycle State Cleanup & Export Hygiene)**:
-  - **Cordis Lifecycle Disposers**: `clearPendingStore`, `clearRefreshMutex`, and `clearModelsCache` connected to the plugin effect disposer in `lib/index.js`, preventing memory retention and stale state across sessions and restarts (#48).
-  - **Comprehensive Logout Flush**: Route `/dsh-grok-xsearch/logout` guaranteed to flush stored tokens, pending OAuth PKCE requests, token refresh mutex, and the cached models catalog.
-  - **Manual Cache Clear Route**: Route `/dsh-grok-xsearch/cache/clear` flushes both query results cache and the models catalog cache.
-  - **Export Modifier Hygiene**: Stripped unneeded `export` keywords from internal-only functions and constants across `models.js`, `oauth-pending.js`, and `updater.js`.
-
-- **Version 0.3.12 (One-Click Updater, Route Security Hardening & Client Decomposition)**:
-  - **One-Click Updater (`lib/updater.js`)**: Added host-side `/api/dsh-grok-xsearch/update` route and settings card update UI for version checking, update status inspection, and one-click upgrades with semver prerelease support and standard pnpm package resolution.
-  - **Fail-Closed Route Security**: Upgraded write routes (`/config`, `/cache/clear`, `/oauth/complete`, `/logout`, `/api/dsh-grok-xsearch/update`) with strict loopback and origin/referer verification protecting against DNS rebinding and cross-site request forgery (CSRF).
-  - **Client UI Decomposition**: Streamlined and decomposed `lib/client.js` below 600 lines with reusable input field helpers and compact layout while strictly retaining browser ModuleLoader self-containment.
-  - **Tool Registration Resilience**: Safe companion tool registration wrapped with `ctx.logger.warn` to log diagnostics instead of silent error swallowing.
-  - **Locale Lifecycle Disposer**: Client locale registration moved inside `ctx.effect` with disposer cleanup.
-  - **Package Metadata Alignment**: Populated `dsh.client.inject` with `@deepseek-ai/dsh-client-locale` and `@deepseek-ai/dsh-client-ui-settings`.
-
-- **Version 0.3.10 (UI Redesign & Comprehensive Hardening)**:
-  - **Unified dsh-clinebot Styling**: Rebuilt settings surface to mirror the reference `dsh-clinebot` architecture: isolated `.gx-section-card` containers, soft translucent status badges, adaptive inputs, and native `--dsw-alias-*` styling tokens.
-  - **Slot Error Isolation**: Integrated React `ErrorBoundary` component around settings views to catch and isolate runtime errors with inline retry capabilities, preventing parent DSH slot crashes.
-  - **Interactive Cache Telemetry Meter**: Added live LRU cache visualizer (`.gx-bar-container`, track, and animated percentage fill) with one-click cache purge action.
-  - **Safe Service Resolution**: Replaced brittle credentials proxy accesses with defensive resolution `(typeof ctx?.get === 'function' ? ctx.get('credentials') : ctx?.credentials)` in `lib/token-manager.js`.
-  - **Dynamic User-Agent**: Configured dynamic package version detection (`dsh-grok-xsearch/${PKG_VERSION}`) in `lib/xsearch.js` for upstream telemetry.
-  - **Dead Code Pruning**: Eliminated legacy uncalled functions `publicAccountView`, `requestOrigin`, and `webCallbackUri`.
-  - **Extended Test Coverage**: Added `test/helpers.test.mjs` verifying `blob.js`, `oauth.js`, `http.js`, `wire.js`, `pkce.js`, and `jwt.js` (58/58 test suite passing).
-
-- **Version 0.3.9 (Robustness & Resilience Hardening)**:
-  - **Token Request Socket Timeout**: `formTokenRequest` in `lib/wire.js` now enforces a strict 15-second `AbortSignal.timeout` preventing hanging sockets during token exchanges or refresh attempts.
-  - **Auto-Eviction of Invalid Credentials**: When upstream refresh returns fatal `invalid_grant` or HTTP 400, stored invalid credentials blob is automatically purged from DSH credentials store to prevent infinite retry storms.
-  - **OAuth Error Handling in Callback**: Handles `?error=` and `?error_description=` query parameters from xAI OAuth provider (e.g. user denied permissions) cleanly, displaying actionable instructions instead of cryptic "Missing code" errors.
-  - **Proactive Cache Pruning & Capacity Limits**: `SEARCH_CACHE` (search queries) and `MODELS_CACHE` (xAI model catalog) proactively prune expired entries upon insertion and enforce upper capacity bounds to prevent memory bloat.
-  - **UI Cache Management**: The settings card now displays live in-memory cache usage and provides an interactive "Clear cache" button calling `/dsh-grok-xsearch/cache/clear`.
-  - **Formal Design Contract**: Established formal design specification for all agent tools, UI card states, foundations, user flows, and locked design decisions.
-
-- **Version 0.3.8 (Architecture & Stability Hardening)**:
-  - **Single-Flight OAuth Mutex**: Prevents concurrent request token refresh races by consolidating simultaneous refresh triggers into a single upstream request.
-  - **Auto-Recovery on HTTP 401 Unauthorized**: If an access token expires mid-operation, tools automatically perform an explicit token refresh and retry the search query transparently.
-  - **Network & Transient Error Backoff**: Added exponential backoff retry logic for upstream network and 5xx transient failures.
-  - **In-Memory Catalog Caching**: Cached xAI model catalog lookups (`listModelsForSettings`, 15-minute TTL) eliminate UI setting panel loading stalls.
-  - **Citation Canonicalization & Tracking Stripping**: Automatically removes URL tracking parameters (`?s=`, `?t=`, `ref_src`, `utm_*`) and harmonizes `twitter.com` into canonical `https://x.com/<handle>/status/<id>` citations to eliminate duplicate citations.
-  - **Streamlined OAuth Pending Store**: Replaced multi-file disk pending store with a lightweight in-memory Map with automatic TTL expiration.
-  - **Settings Scope Race Elimination**: Removed dual-write race in client settings UI to use single authoritative HTTP config persistence.
-
-- **Version 0.3.3**: Hardens compatibility with mixed DeepSeek Harness alpha/rc peer resolutions. All four registered tools expose an object-root JSON Schema (`type: "object"` with `properties` and `required`) even when an older `dsh-tools` runtime returns the legacy property-map form. Tool behavior and OAuth/API contracts are unchanged.
+---
 
 ## 📦 Quick Installation
 
@@ -264,8 +229,7 @@ dsh-grok-xsearch:
 dsh plugin --profile web add @goodandready/dsh-grok-xsearch
 ```
 
-> [!IMPORTANT]
-> Authenticate your SuperGrok session in **Settings → Plugins → Grok X Search & Intelligence Suite**.
+After installation, open **Settings → Plugins → Grok X Search & Intelligence Suite**, enter your `grokClientId`, and click **Connect**.
 
 ---
 
@@ -273,12 +237,21 @@ dsh plugin --profile web add @goodandready/dsh-grok-xsearch
 
 | Route | Method | Description |
 |---|---|---|
-| `/dsh-grok-xsearch/config` | `GET, PUT` | Inspects or updates search configuration and model selection |
-| `/dsh-grok-xsearch/cache/clear` | `POST` | Clears in-memory query cache and cached models catalog |
-| `/dsh-grok-xsearch/oauth/start` | `GET` | Initiates standalone SuperGrok OAuth PKCE flow |
-| `/dsh-grok-xsearch/oauth/callback` | `GET` | Handles browser OAuth redirect callback |
-| `/dsh-grok-xsearch/oauth/complete` | `POST` | Finalizes authentication from manual URL paste |
-| `/dsh-grok-xsearch/logout` | `POST` | Clears stored session tokens, pending OAuth requests, models cache, and refresh mutex |
+| `/dsh-grok-xsearch/config` | `GET, PUT` | Reads or updates plugin configuration, account status, model catalog, and cache telemetry |
+| `/dsh-grok-xsearch/cache/clear` | `POST` | Purges in-memory + disk query cache and cached models catalog |
+| `/dsh-grok-xsearch/oauth/start` | `GET` | Generates PKCE challenge (`S256`) and returns xAI OAuth authorization URL |
+| `/dsh-grok-xsearch/oauth/callback` | `GET` | Handles browser OAuth redirect callback (`code`/`state` or provider errors) |
+| `/dsh-grok-xsearch/oauth/complete` | `POST` | Completes PKCE sign-in from a manually pasted callback URL or authorization code |
+| `/dsh-grok-xsearch/logout` | `POST` | Removes stored credential from `ctx.credentials` and flushes pending OAuth, cache, and mutex state |
+| `/api/dsh-grok-xsearch/update` | `GET, HEAD, POST` | Checks installed vs. latest npm version (`GET`) or performs a guarded one-click exact update (`POST`) |
+
+---
+
+## 🩺 Troubleshooting
+
+- **`You have run out of credits or need a Grok subscription`**: Your OAuth login succeeded, but the connected xAI account only has standard X / X Premium without **SuperGrok** or **xAI API credits**. Activate SuperGrok or add xAI API credits on that account.
+- **Browser does not return after sign-in**: Copy the full redirected callback URL (`http://127.0.0.1:56121/callback?code=...&state=...`) from the browser address bar, click **"Browser did not return here? Paste the redirected URL"** in the plugin card, and click **Submit**.
+- **`untrusted baseUrl host`**: For security, `baseUrl` only accepts `https://api.x.ai` (and subdomains) or local loopback (`127.0.0.1` / `localhost`).
 
 ---
 

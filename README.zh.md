@@ -17,8 +17,8 @@
 
 <p align="center">
   <a href="README.md"><b>🇬🇧 English</b></a> •
-  <a href="README.ru.md"><b>🇷🇺 Русский</b></a> •
-  <a href="README.zh.md"><b>🇨🇳 中文说明</b></a>
+  <a href="README.zh.md"><b>🇨🇳 中文说明</b></a> •
+  <a href="README.ru.md"><b>🇷🇺 Русский</b></a>
 </p>
 
 <table align="center">
@@ -37,68 +37,187 @@
 
 ## ⚡ 概述
 
-**`dsh-grok-xsearch`** 为 **DeepSeek Harness** 智能体提供了一整套专门用于 X (Twitter) 实时分析与情报检索的工具套件。
+**`dsh-grok-xsearch`** 为 **DeepSeek Harness** 智能体提供一整套实时 X (Twitter) 深度搜索、长帖讨论串还原、作者画像分析、趋势挖掘与社区附注 (Community Notes) 事实核查工具。
 
-通过经过验证的 SuperGrok OAuth 会话与 xAI Responses API (`POST /responses`)，智能体可以直接查询最新突破性新闻、开发者观点、讨论帖、作者时间线、趋势话题和社区附注 (Community Notes) 事实核查，无需支付高昂的单次 X API 费用。
+插件通过经过验证的 **SuperGrok OAuth** 会话调用官方 xAI Responses API (`POST /responses` 内置 `x_search`)，无需单独购买昂贵的 X (Twitter) Enterprise/Pro API 套餐（仅需您的 xAI SuperGrok 订阅或 xAI API 额度）。
+
+```mermaid
+graph LR
+    subgraph AgentAction ["DSH 智能体推理"]
+        Agent["🤖 智能体：需要实时 X 上下文"] --> Select{"工具选择"}
+        Select --> T1["x_search: 深度搜索"]
+        Select --> T2["x_author_profile: 作者画像"]
+        Select --> T3["x_trending_topics: 实时趋势"]
+        Select --> T4["x_fact_check_notes: 事实核查"]
+        Select --> T5["x_thread_reader: 讨论串还原"]
+        Select --> T6["x_find_experts: 领域专家发现"]
+    end
+
+    subgraph SearchEngine ["dsh-grok-xsearch 执行引擎"]
+        T1 & T2 & T3 & T4 & T5 & T6 --> Cache{"内存 + 磁盘 TTL 缓存"}
+        Cache -->|命中| DirectReturn["极速返回缓存结果"]
+        Cache -->|未命中| Filter["过滤与多模态规范化"]
+        Filter --> Auth{"SuperGrok PKCE OAuth"}
+    end
+
+    subgraph UpstreamX ["xAI Responses API"]
+        Auth --> xAI["POST /responses (tool: x_search)"]
+        xAI -->|HTTP 429| Fallback["智能模型降级"]
+        Fallback --> xAI
+        xAI --> Raw["实时帖子、指标与引用注释"]
+    end
+
+    subgraph ContextAssembly ["格式化与持久化"]
+        Raw --> Dedup["引用链接规范化与去重"]
+        Dedup --> CacheSave["原子 0600 磁盘 + LRU 缓存"]
+        CacheSave --> Output["结构化 Markdown 与可点击引用"]
+        Output --> Agent
+    end
+
+    style AgentAction fill:#1e1e2e,stroke:#89b4fa,stroke-width:2px,color:#cdd6f4
+    style SearchEngine fill:#181825,stroke:#cba6f7,stroke-width:2px,color:#cdd6f4
+    style UpstreamX fill:#11111b,stroke:#a6e3a1,stroke-width:2px,color:#cdd6f4
+    style ContextAssembly fill:#181825,stroke:#f38ba8,stroke-width:2px,color:#cdd6f4
+```
 
 ---
 
-## 🛠️ 工具集参考
+## 🔑 前置要求 (Prerequisites)
+
+> [!IMPORTANT]
+> 在连接账户前，请确保满足以下两项条件：
+
+1. **具备 SuperGrok 订阅或 xAI API 额度的 xAI 账户**
+   - 本插件调用 `https://api.x.ai/v1/responses`，需要账户拥有有效的 **SuperGrok** 订阅或 **xAI API 额度 (credits)**。
+   - **仅有 X Premium 订阅是不够的** —— X Premium 仅提供 `x.com` 站内的 Grok 使用权限。若账户仅有 X Premium，OAuth 登录可以成功保存凭据，但所有工具调用都会返回上游错误：
+     `You have run out of credits or need a Grok subscription.`
+2. **支持本地回调地址的 OAuth Client ID (`grokClientId`)**
+   - 需要填写支持 PKCE (`S256`) 且允许回调地址覆盖 `http://127.0.0.1:56121/callback`（或在**高级设置**中自定义的 `redirectUri`）的 OAuth Client ID。
+   - 如果浏览器运行在远程机器上或登录后未能自动跳回，可在插件设置卡片中点击 **“浏览器未自动返回？粘贴重定向 URL”**，粘贴浏览器地址栏中的完整回调链接完成绑定。
+
+---
+
+## 🛠️ 工具集完整参考
+
+插件在 `ctx.tools` 中注册了 **6 个**严格遵循 JSON Schema 契约的工具：
 
 ### 1. `x_search` — 帖子与讨论深度搜索
 
 | 参数 | 类型 | 必填 | 说明 |
 |---|---|---|---|
-| `query` | `string` | **是** | 自然语言搜索词或主题 |
-| `allowed_x_handles` | `string` | 否 | 包含的用户名列表（逗号分隔，最多10个） |
-| `excluded_x_handles` | `string` | 否 | 排除的用户名列表（最多10个） |
+| `query` | `string` | **是** | 自然语言搜索词或主题关键词 |
+| `allowed_x_handles` | `string` | 否 | 仅包含指定作者用户名（逗号分隔，最多 10 个，不可与 `excluded_x_handles` 同时使用） |
+| `excluded_x_handles` | `string` | 否 | 排除指定作者用户名（逗号分隔，最多 10 个） |
 | `from_date` | `string` | 否 | 起始日期 (`YYYY-MM-DD`) |
 | `to_date` | `string` | 否 | 结束日期 (`YYYY-MM-DD`) |
-| `only_original_posts` | `boolean` | 否 | 仅限原创帖子（过滤转推与引用） |
-| `has_media` | `boolean` | 否 | 过滤包含图片、图表或视频的帖子 |
-| `has_links` | `boolean` | 否 | 过滤包含外部链接与文章的帖子 |
-| `only_threads` | `boolean` | 否 | 过滤长篇深度讨论串 |
-| `lang` | `string` | 否 | 语言代码 (例如 `en`, `zh`, `ru`) |
-| `min_likes` | `number` | 否 | 最低点赞数阈值 |
-| `min_reposts` | `number` | 否 | 最低转发数阈值 |
-| `enable_image_understanding` | `boolean` | 否 | 允许 xAI 提取和分析图像/图表数据 |
-| `enable_video_understanding` | `boolean` | 否 | 允许 xAI 分析视频片段与语音 |
-| `extract_tables` | `boolean` | 否 | 将帖子配图与信息图中的基准测试、财务数据或对比表格提取为 Markdown 格式 |
-
-### 2. `x_author_profile` — 作者观点与历史分析
-* `handle`: 用户名 (`@username`)
-* `focus_topic`: 关注的主题或立场
-* `from_date` / `to_date`: 日期区间
-
-### 3. `x_trending_topics` — 实时热门趋势挖掘
-* `domain`: 领域分类 (`tech`, `ai`, `crypto`, `science`, `world`, `general`)
-* `region`: 区域 (`Global`, `US`, `EU`, `Asia`)
-* `timeframe`: 时间范围 (`today`, `past_24h`, `past_week`)
-
-### 4. `x_fact_check_notes` — 社区附注与事实核查
-* `claim`: 待核查的事实陈述或传闻
-* `target_url`: 相关推文或文章链接
-* `allowed_x_handles`: 权威核查机构或专家账号
-
-### 5. `x_thread_reader` — 长推文讨论串深度还原
-* `tweet_url_or_id`: 推文链接 (`https://x.com/username/status/...`) 或推文 ID
-* `include_replies`: 是否包含高互动优质社区回复与反驳 (默认: `true`)
-* `max_depth`: 讨论串最大抓取深度 (默认: `10`, 最大: `25`)
-* `extract_tables`: 将讨论串所附图表与基准数据提取为 Markdown 表格
-
-### 6. `x_find_experts` — 领域权威专家与领袖发现
-* `domain_or_topic`: 研究领域、技术栈或核心议题 (例如 `量子计算`, `LLM 推理`)
-* `min_followers`: 可选的最低关注者门槛
-* `language`: 语言代码 (例如 `en`, `zh`)
-* `limit`: 返回数量 (默认: `5`, 最大: `15`)
+| `only_original_posts` | `boolean` | 否 | 仅限原创帖子（过滤转推与纯引用） |
+| `has_media` | `boolean` | 否 | 仅筛选包含图片、信息图、图表或视频的帖子 |
+| `has_links` | `boolean` | 否 | 仅筛选包含外部链接、论文或代码仓库的帖子 |
+| `only_threads` | `boolean` | 否 | 仅筛选多条连发深度讨论串 |
+| `lang` | `string` | 否 | 语言代码过滤 (例如 `en`, `zh`, `ru`, `ja`) |
+| `min_likes` | `number` | 否 | 最低点赞数门槛 |
+| `min_reposts` | `number` | 否 | 最低转发数门槛 |
+| `enable_image_understanding` | `boolean` | 否 | 允许 xAI 分析并提取帖子配图和图表中的数据 |
+| `enable_video_understanding` | `boolean` | 否 | 允许 xAI 总结帖子视频片段中的发言与关键帧 |
+| `extract_tables` | `boolean` | 否 | 自动开启图像理解并将配图中的基准测试、财务指标或对比数据整理为 Markdown 表格 |
 
 ---
 
-## 🛡️ 弹性与性能特性
+### 2. `x_author_profile` — 作者观点与时间线分析
 
-* **智能模型自动降级**: 在 `grok-4.6` 遇到 429 速率限制时，自动切换至 `grok-4.5` 保证任务顺利完成。
-* **持久化磁盘与内存 TTL 缓存**: 5分钟内重复查询极速命中，支持磁盘持久化、429 负缓存保护与实时命中率监控。
-* **多语言本地化**: 完美支持英语、中文和俄语设置界面。
+| 参数 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| `handle` | `string` | **是** | 作者 X 用户名（如 `@ylecun` 或 `sama`） |
+| `focus_topic` | `string` | 否 | 重点分析该作者在特定议题上的立场 |
+| `from_date` | `string` | 否 | 起始日期 (`YYYY-MM-DD`) |
+| `to_date` | `string` | 否 | 结束日期 (`YYYY-MM-DD`) |
+| `only_original_posts` | `boolean` | 否 | 仅分析原创帖（默认 `true`） |
+
+---
+
+### 3. `x_trending_topics` — 实时热门趋势挖掘
+
+| 参数 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| `domain` | `string` | 否 | 领域分类（如 `tech`, `ai`, `crypto`, `science`, `finance`，默认 `tech`） |
+| `region` | `string` | 否 | 地区范围（如 `Global`, `US`, `Europe`, `Asia`，默认 `Global`） |
+| `timeframe` | `string` | 否 | 时间范围（`today`, `past_24h`, `past_week`，默认 `today`） |
+| `min_likes` | `number` | 否 | 热门帖子最低点赞门槛（默认 `20`） |
+
+---
+
+### 4. `x_fact_check_notes` — 社区附注与事实核查
+
+| 参数 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| `claim` | `string` | **是** | 待核查的陈述、新闻或传闻 |
+| `target_url` | `string` | 否 | 待核实的指定推文或文章 URL |
+| `allowed_x_handles` | `string` | 否 | 限定核查的研究者或权威机构账号（逗号分隔） |
+| `enable_image_understanding` | `boolean` | 否 | 检查辟谣帖中的配图或信息图 |
+
+---
+
+### 5. `x_thread_reader` — 长推文讨论串深度还原
+
+| 参数 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| `tweet_url_or_id` | `string` | **是** | 推文 URL（如 `https://x.com/username/status/1234567890`）或纯数字 ID |
+| `include_replies` | `boolean` | 否 | 是否包含高互动优质社区回复与反驳（默认 `true`） |
+| `max_depth` | `number` | 否 | 讨论串最大抓取深度（默认 `10`，范围 `1–25`） |
+| `extract_tables` | `boolean` | 否 | 将讨论串配图中的图表与基准数据整理为 Markdown 表格 |
+
+---
+
+### 6. `x_find_experts` — 领域权威专家与意见领袖发现
+
+| 参数 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| `domain_or_topic` | `string` | **是** | 研究领域、技术栈或核心议题（如 `Rust async`、`LLM 推理`） |
+| `min_followers` | `number` | 否 | 最低关注者数量门槛 |
+| `language` | `string` | 否 | 语言代码（如 `en`, `zh`） |
+| `limit` | `number` | 否 | 返回专家数量（默认 `5`，范围 `1–15`） |
+
+---
+
+## 🛡️ 架构、容错与安全特性
+
+* **安全凭据隔离与单飞刷新互斥锁 (`lib/token-manager.js`)**：OAuth 令牌通过纯字符串引用 `GROK_XSEARCH_OAUTH_1` 安全保存在 DSH `ctx.credentials` 服务中（绝不写入明文配置）。并发刷新共享同一 Promise；遇到 `HTTP 401` 时自动强制刷新并重试（即使 `retries` 设为 `0`）；遇到不可恢复的 `invalid_grant` 时自动清理失效凭据。
+* **智能速率限制降级与退避重试 (`lib/xsearch.js`)**：遇到 `HTTP 429` 时自动切换至备用 Grok 模型；网络抖动与 `5xx` 错误执行指数退避重试。
+* **按账户隔离的内存 + `0600` 磁盘缓存 (`lib/xsearch.js`)**：基于访问令牌指纹隔离缓存（上限 200 条 LRU），并以 `0600` 权限原子持久化至按 DSH profile 区分的磁盘文件中，在插件停止或重载时自动落盘。
+* **引用链接规范化与去重**：自动将 `twitter.com` 统一为 `https://x.com/<handle>/status/<id>` 并剥离 `s`、`t`、`ref_src`、`utm_*` 追踪参数。
+* **Fail-Closed 路由鉴权与 SSRF 防护 (`lib/http.js`, `lib/updater.js`)**：所有设置与 OAuth 路由均经过 `ctx.connection.requestRejection` 及同源/回环校验；`baseUrl` 严格限制为 `https://api.x.ai` 或本地回环地址，防止令牌外泄。
+* **原生双语 UI 与一键更新 (`lib/client.js`, `lib/updater.js`)**：挂载于 DSH 插件卡片插槽（`plugins.row.config` 与 `plugins.item`），使用标准 `--dsw-alias-*` 主题变量，内置英文 (`en`) 与简体中文 (`zh`)，并通过 `@goodandready/dsh-russian-lang` 支持运行时俄语界面。
+
+---
+
+## ⚙️ 配置说明 (`settings.yaml` / Web UI)
+
+```yaml
+dsh-grok-xsearch:
+  enabled: true
+  grokClientId: "<YOUR_GROK_OAUTH_CLIENT_ID>"
+  redirectUri: "http://127.0.0.1:56121/callback"
+  baseUrl: "https://api.x.ai/v1"
+  model: "grok-4.6"
+  timeoutSeconds: 180
+  retries: 2
+  autoFallbackModel: true
+  enableCache: true
+  cacheTtlSeconds: 300
+```
+
+| 参数 | 类型 | 默认值 | 说明 |
+|---|---|---|---|
+| `enabled` | `boolean` | `true` | 启用或禁用全部 6 个 Grok X 工具 |
+| `grokClientId` | `string` | `""` | PKCE OAuth 客户端 ID（需允许 `redirectUri` 回调） |
+| `redirectUri` | `string` | `"http://127.0.0.1:56121/callback"` | 本地 OAuth PKCE 回调 URL |
+| `baseUrl` | `string` | `"https://api.x.ai/v1"` | xAI API 根地址（仅允许 `https://api.x.ai` 或本地回环地址） |
+| `model` | `string` | `"grok-4.6"` | 默认查询模型 |
+| `timeoutSeconds` | `number` | `180` | 单次请求超时时间（秒，`5–900`） |
+| `retries` | `number` | `2` | 临时网络或 `5xx` 错误重试次数（`0–10`） |
+| `autoFallbackModel` | `boolean` | `true` | 遇到 `HTTP 429` 时自动降级至备用模型 |
+| `enableCache` | `boolean` | `true` | 启用按账户隔离的内存与磁盘查询缓存 |
+| `cacheTtlSeconds` | `number` | `300` | 缓存保留时间（秒，`10–86400`） |
 
 ---
 
@@ -108,30 +227,32 @@
 dsh plugin --profile web add @goodandready/dsh-grok-xsearch
 ```
 
+安装后打开 **设置 → 插件 → Grok X 搜索与情报套件**，填入 `grokClientId` 并点击 **连接**。
+
+---
+
+## 🔌 HTTP API 路由
+
+| 路由 | 方法 | 说明 |
+|---|---|---|
+| `/dsh-grok-xsearch/config` | `GET, PUT` | 读取或更新插件配置、账户状态、模型目录与缓存统计 |
+| `/dsh-grok-xsearch/cache/clear` | `POST` | 清空查询缓存（内存 + 磁盘）与模型目录缓存 |
+| `/dsh-grok-xsearch/oauth/start` | `GET` | 生成 PKCE (`S256`) 参数并返回 xAI OAuth 授权地址 |
+| `/dsh-grok-xsearch/oauth/callback` | `GET` | 处理浏览器 OAuth 重定向回调 |
+| `/dsh-grok-xsearch/oauth/complete` | `POST` | 通过手动粘贴回调 URL 或授权码完成登录 |
+| `/dsh-grok-xsearch/logout` | `POST` | 从 `ctx.credentials` 移除令牌并清理挂起会话、缓存与刷新锁 |
+| `/api/dsh-grok-xsearch/update` | `GET, HEAD, POST` | 检查当前与最新 npm 版本 (`GET`) 或执行受保护的一键更新 (`POST`) |
+
+---
+
+## 🩺 常见问题排查 (Troubleshooting)
+
+- **`You have run out of credits or need a Grok subscription`**：OAuth 授权已成功，但当前连接的账户仅有普通 X / X Premium，未开通 **SuperGrok** 且无 **xAI API 额度**。请为该账户开通 SuperGrok 或充值 xAI API 额度。
+- **浏览器登录后未自动跳回**：复制浏览器地址栏中的完整回调链接 (`http://127.0.0.1:56121/callback?code=...&state=...`)，在插件卡片中点击 **“浏览器未自动返回？粘贴重定向 URL”** 并提交即可。
+- **`untrusted baseUrl host`**：出于安全保护，`baseUrl` 仅接受 `https://api.x.ai`（及其子域名）或本地回环地址 (`127.0.0.1` / `localhost`)。
+
 ---
 
 ## 📄 许可证
 
 MIT © [GooDAnDReaDY](https://github.com/GooDAnDReaDY)
-
-## 兼容性
-
-- **版本 0.3.14 (移除设置重复入口与卡片独占)**:
-  - **移除冗余 `settings.section` 回退**: 插件配置严格仅在 `Settings → 插件` 的折叠卡片 (`settings.plugin.item`) 中展示，彻底消除侧边栏根级重复项 (#51)。
-  - **插槽故障诊断日志**: 当 `settings.plugin.item` 插槽不可用时，通过 `ctx.logger.warn` 记录告警信息，不再使用次级根区域静默顶替。
-
-- **版本 0.3.13 (生命周期状态清理与导出精简)**:
-  - **Cordis 生命周期清理器**: 将 `clearPendingStore`、`clearRefreshMutex` 和 `clearModelsCache` 连接至 `lib/index.js` 的插件 effect 清理回调，杜绝会话与重启间的状态残留 (#48)。
-  - **退出登录全面清理**: `/dsh-grok-xsearch/logout` 路由确保同时清除凭据、未决 OAuth 请求、刷新互斥锁及模型列表缓存。
-  - **缓存清理同步清除模型**: `/dsh-grok-xsearch/cache/clear` 同时清理查询缓存与模型列表缓存。
-  - **导出关键字精简**: 移除仅在内部使用的模块函数的冗余 `export` 关键字。
-
-- **版本 0.3.12 (一键更新模块、路由安全增强与客户端精简)**:
-  - **一键更新模块 (`lib/updater.js`)**: 新增主机端 `/api/dsh-grok-xsearch/update` 路由与设置卡片更新区块，支持版本检查、预发布版本识别及标准安装。
-  - **Fail-Closed 严格路由防护**: 为写操作路由补充基于 loopback 与 origin/referer 的校验，防御 DNS 重新绑定与 CSRF 攻击。
-  - **客户端代码精简与解耦**: 将 `lib/client.js` 行数精简至 589 行（低于 600 行限制），保持 ModuleLoader 浏览器独立性与所有 10 项配置功能。
-  - **工具安全注册**: 使用带日志记录的 `registerToolSafe` 替代静默异常捕获。
-  - **语言包生命周期管理**: 客户端语言包注册使用 `ctx.effect` 与清理回调。
-  - **补齐客户端注入声明**: 在 `package.json` 中配置 `dsh.client.inject`。
-
-- **0.3.3 版本**: 增强了与混用 DeepSeek Harness alpha/rc 依赖版本的兼容性。四个工具现在始终导出根节点为 type: "object" 的 JSON Schema（包含 properties 和 required），即使旧版 dsh-tools 返回 legacy 属性映射格式。工具行为及 OAuth/API 契约保持不变。

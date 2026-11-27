@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.34
+
+- **Fix (Runtime / Search & Cache Lifecycle)**: Fixed `runXSearch()` dropping `extract_tables` when calling `buildXSearchPayload()`; fixed HTTP `401` token-refresh auto-recovery aborting without retrying when `retries` is `0`; preserved flushed disk cache across full LIFO/FIFO plugin effect disposal (`clearXSearchCache({ removeDisk: false })` on stop vs. full disk removal on `/logout` and `/cache/clear`); honored per-session `pkce.redirectUri` in `exchangeCode()` (#100).
+- **Fix (UI / Validation / Route Guard)**: Fixed `numInput` resetting `retries = 0` to `2` and added `[min, max]` clamping on both client and server (`timeoutSeconds` `5–900`, `retries` `0–10`, `cacheTtlSeconds` `10–86400`); checked `res.ok` on initial `GET /dsh-grok-xsearch/config` load; added `aria-expanded` to collapsible `PluginCard` header; removed stale `'0.3.23'` version fallback, unlocalized badge literals, misleading `'xai-...'` placeholder on `grokClientId`, and unused `SKEW_MS` constant; rejected cross-site `GET` requests on `/api/dsh-grok-xsearch/update` (#101).
+- **Docs (Prerequisites & Multi-Language Parity)**: Added **Prerequisites** section to `README.md`, `README.zh.md`, and `README.ru.md` clarifying the **SuperGrok** / **xAI API credits** requirement (vs. X Premium) and `grokClientId` / `redirectUri` setup; brought all three READMEs to full 6-tool, 10-setting, 7-route parity without chronological version dumps; added Route Policy and Publication Boundary tables to `docs/design/DESIGN.md` (#102).
+
 ## 0.3.33
 
 - **Fix (Credentials / Windows & DSH 0.2.2 Compatibility)**: Fixed `credentialRef()` in `lib/token-manager.js` to return a plain `CredentialRef` string (`GROK_XSEARCH_OAUTH_1`) matching `@deepseek-ai/dsh-credentials` contract instead of an object `{ type: 'oauth', id }`, resolving synchronous `TypeError: name.toUpperCase is not a function` crashes on Windows 11 / DSH Desktop `0.2.2-alpha.3` and silent lookup misses on POSIX across `loadBlob()`, `saveBlob()`, and `clearBlob()`; guarded `loadBlob()` with `try/catch` against synchronous provider exceptions (#98, external GitHub #1).
